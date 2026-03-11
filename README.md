@@ -10,7 +10,9 @@ This isn't a framework. There's no library to install. It's a pattern specificat
 
 ## Why this exists
 
-The system that implements this constitution was built by a single developer with ADHD and autism as externalized executive function infrastructure — a personal operating environment where LLM agents handle the cognitive overhead of management practice, knowledge maintenance, and daily operations. When you're building a system that manages your 1:1 prep, tracks your open loops, and nudges you about stale conversations, the question of what the agents *shouldn't* do becomes existential:
+The systems that implement this constitution externalize executive function into infrastructure — LLM agents handle the cognitive overhead of management practice, knowledge maintenance, and daily operations that compounds silently for every knowledge worker. The developer who built them has ADHD and autism, which made the need acute, but the problem is general: tracking open loops, maintaining context across relationships, noticing staleness patterns, and reacting to changes are executive function and context processing tasks that scale poorly with human attention alone.
+
+When you're building a system that manages your 1:1 prep, tracks your open loops, and nudges you about stale conversations, the question of what the agents *shouldn't* do becomes existential:
 
 - **Don't generate feedback language.** LLMs prepare context; humans deliver words to other humans.
 - **Don't build multi-user features.** There is exactly one operator. Auth systems, role management, and collaboration features are constitutional violations.
