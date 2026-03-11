@@ -1,0 +1,61 @@
+# Personal Domain Sufficiency Model
+version: 1
+requirements:
+  - id: family-context
+    category: foundational
+    description: "Key family members and personal contacts documented."
+    source: "operator"
+    check:
+      type: min_count
+      path: "20-personal"
+      filter:
+        type: person
+      min: 1
+    acquisition:
+      method: interview
+      question: "Who are the key people in your personal life? Family members, close friends — anyone the system should know about."
+      output: person_note
+    priority: 90
+    depends_on: []
+
+  - id: personal-goals
+    category: structural
+    description: "Personal goals documented."
+    source: "operator"
+    check:
+      type: file_exists
+      path: "20-personal/references/personal-goals.md"
+    acquisition:
+      method: interview
+      question: "What are your personal goals? Health, hobbies, learning, anything outside work and music."
+      output: reference_doc
+    priority: 60
+    depends_on: []
+
+  - id: health-baseline
+    category: enrichment
+    description: "Health and fitness baseline documented."
+    source: "operator"
+    check:
+      type: file_exists
+      path: "20-personal/references/health-baseline.md"
+    acquisition:
+      method: interview
+      question: "Any health or fitness context the system should know? Exercise routine, dietary constraints, energy patterns."
+      output: reference_doc
+    priority: 35
+    depends_on: []
+
+  - id: routines
+    category: structural
+    description: "Daily/weekly routines documented."
+    source: "operator"
+    check:
+      type: file_exists
+      path: "20-personal/references/routines.md"
+    acquisition:
+      method: interview
+      question: "What does your typical day and week look like? Morning routine, work hours, evening structure."
+      output: reference_doc
+    priority: 60
+    depends_on: []

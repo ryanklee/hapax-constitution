@@ -1,0 +1,94 @@
+# Music Production Sufficiency Model
+version: 1
+requirements:
+  - id: hardware-inventory
+    category: foundational
+    description: "Hardware gear documented — synths, samplers, controllers."
+    source: "operator"
+    check:
+      type: file_exists
+      path: "20-personal/music/gear-inventory.md"
+    acquisition:
+      method: interview
+      question: "What gear do you have in your studio? List your synths, samplers, controllers, and effects."
+      output: reference_doc
+    priority: 90
+    depends_on: []
+
+  - id: signal-routing
+    category: foundational
+    description: "Audio and MIDI signal routing documented."
+    source: "operator"
+    check:
+      type: file_exists
+      path: "20-personal/music/signal-routing.md"
+    acquisition:
+      method: interview
+      question: "How is your studio routed? Describe your MIDI and audio signal chains."
+      output: reference_doc
+    priority: 90
+    depends_on: []
+
+  - id: production-workflow
+    category: structural
+    description: "Production workflow documented — how you start and finish tracks."
+    source: "operator"
+    check:
+      type: file_exists
+      path: "20-personal/music/production-workflow.md"
+    acquisition:
+      method: interview
+      question: "Describe your production workflow. How do you start a track? How do you finish one?"
+      output: reference_doc
+    priority: 60
+    depends_on: []
+
+  - id: sample-library
+    category: structural
+    description: "Sample library organization documented."
+    source: "operator"
+    check:
+      type: file_exists
+      path: "20-personal/music/sample-library.md"
+    acquisition:
+      method: interview
+      question: "How is your sample library organized? Where are your samples stored? Any naming conventions?"
+      output: reference_doc
+    priority: 60
+    depends_on: []
+
+  - id: current-projects
+    category: enrichment
+    description: "Active music projects documented."
+    source: "operator"
+    check:
+      type: min_count
+      path: "20-personal/music"
+      filter:
+        type: project
+        status: active
+      min: 1
+    acquisition:
+      method: interview
+      question: "What music projects are you currently working on? For each: name, genre/style, stage (idea/in-progress/mixing/done)."
+      output: reference_doc
+    priority: 35
+    depends_on: []
+
+  - id: collaborators
+    category: enrichment
+    description: "Music collaborators documented as person notes."
+    source: "operator"
+    check:
+      type: min_count
+      path: "10-work/people"
+      filter:
+        type: person
+        music-role: collaborator
+      min: 0
+    acquisition:
+      method: interview
+      question: "Do you collaborate with anyone on music? Who, and what's their role?"
+      output: person_note
+    priority: 35
+    depends_on: []

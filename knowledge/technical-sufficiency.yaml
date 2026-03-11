@@ -1,0 +1,72 @@
+# Technical Infrastructure Sufficiency Model
+version: 1
+requirements:
+  - id: service-topology
+    category: foundational
+    description: "Docker service topology documented and current."
+    source: "derived"
+    check:
+      type: file_exists
+      path: "30-system/briefings/latest-briefing.md"
+    acquisition:
+      method: external
+      question: null
+      output: null
+    priority: 90
+    depends_on: []
+
+  - id: model-inventory
+    category: structural
+    description: "Available LLM models and their use cases documented."
+    source: "derived"
+    check:
+      type: file_exists
+      path: "30-system/references/model-inventory.md"
+    acquisition:
+      method: nudge
+      question: null
+      output: null
+    priority: 60
+    depends_on: []
+
+  - id: backup-verification
+    category: structural
+    description: "Backup strategy documented and verified."
+    source: "derived"
+    check:
+      type: file_exists
+      path: "30-system/references/backup-strategy.md"
+    acquisition:
+      method: nudge
+      question: null
+      output: null
+    priority: 60
+    depends_on: []
+
+  - id: component-registry
+    category: structural
+    description: "Component registry maintained and current."
+    source: "derived"
+    check:
+      type: file_exists
+      path: "30-system/references/component-registry.md"
+    acquisition:
+      method: external
+      question: null
+      output: null
+    priority: 60
+    depends_on: []
+
+  - id: security-posture
+    category: enrichment
+    description: "Security hardening measures documented."
+    source: "derived"
+    check:
+      type: file_exists
+      path: "30-system/references/security-posture.md"
+    acquisition:
+      method: nudge
+      question: null
+      output: null
+    priority: 35
+    depends_on: []
