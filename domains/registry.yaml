@@ -1,0 +1,136 @@
+# domains/registry.yaml — Life domain definitions for the Domain Lattice Engine.
+# Schema: domains declare vault paths, profiler dimensions, relationships,
+# governance, and person extensions. Constitutional layer constrains all domains.
+version: 1
+updated: "2026-03-04"
+
+constitutional:
+  - id: values-ethics
+    description: "Higher principles, ethical constraints, personal values"
+    axiom_ids: [single_user, executive_function]
+    supremacy: true
+
+domains:
+  - id: management
+    name: "Management & Leadership"
+    status: active
+    vault: work
+    sufficiency_model: knowledge/management-sufficiency.yaml
+    vault_paths:
+      - "10-work/people"
+      - "10-work/meetings"
+      - "10-work/projects"
+      - "10-work/decisions"
+      - "10-work/references"
+      - "10-work/coaching"
+      - "10-work/feedback"
+    profiler_dimensions:
+      - management_practice
+      - team_leadership
+    relationships:
+      - target: technical
+        type: supports
+        description: "Technical depth informs management decisions"
+      - target: personal
+        type: constrained-by
+        description: "Work-life boundary constraints"
+    governance:
+      axiom_ids: [management_governance, corporate_boundary]
+      heuristics:
+        - "LLM prepares, human delivers"
+        - "Never generate feedback language"
+        - "Signal aggregation, not recommendation"
+    person_extensions:
+      fields:
+        - { name: mgmt-role, type: string }
+        - { name: mgmt-team, type: string }
+        - { name: mgmt-cadence, type: string }
+        - { name: cognitive-load, type: number, range: [1, 5] }
+        - { name: skill-level, type: string, options: [developing, career, advanced, expert] }
+        - { name: will-signal, type: string, options: [high, moderate, low] }
+        - { name: coaching-active, type: boolean }
+        - { name: feedback-style, type: string }
+        - { name: growth-vector, type: string }
+        - { name: career-goal-3y, type: string }
+        - { name: current-gaps, type: string }
+        - { name: current-focus, type: string }
+        - { name: last-career-convo, type: date }
+        - { name: team-type, type: string }
+        - { name: interaction-mode, type: string }
+      staleness_days: 14
+
+  - id: music
+    name: "Music Production"
+    status: active
+    vault: personal
+    sufficiency_model: knowledge/music-sufficiency.yaml
+    vault_paths:
+      - "20-personal/music"
+    profiler_dimensions:
+      - music_production
+      - technical_preferences
+    relationships:
+      - target: technical
+        type: supports
+        description: "MIDI/audio programming supports production"
+    governance:
+      axiom_ids: []
+      heuristics:
+        - "Creative autonomy — suggest techniques, never aesthetic judgments"
+        - "Hardware-first — DAWless workflow is intentional"
+    person_extensions:
+      fields:
+        - { name: music-role, type: string }
+        - { name: music-instrument, type: string }
+        - { name: music-genre, type: string }
+      staleness_days: 30
+
+  - id: personal
+    name: "Personal & Family"
+    status: active
+    vault: personal
+    sufficiency_model: knowledge/personal-sufficiency.yaml
+    vault_paths:
+      - "20-personal"
+    profiler_dimensions:
+      - personal_interests
+      - health_fitness
+    relationships:
+      - target: management
+        type: constrained-by
+        description: "Work-life boundary"
+    governance:
+      axiom_ids: []
+      heuristics:
+        - "Maximum privacy — minimal data collection"
+        - "Never optimize relationships"
+        - "Record only what operator explicitly shares"
+    person_extensions:
+      fields:
+        - { name: personal-context, type: string }
+        - { name: personal-cadence, type: string }
+      staleness_days: 60
+
+  - id: technical
+    name: "Technical Infrastructure"
+    status: active
+    vault: work
+    sufficiency_model: knowledge/technical-sufficiency.yaml
+    vault_paths:
+      - "30-system"
+    profiler_dimensions:
+      - technical_preferences
+      - development_patterns
+    relationships:
+      - target: management
+        type: supports
+      - target: music
+        type: supports
+    governance:
+      axiom_ids: [single_user]
+      heuristics:
+        - "Infrastructure serves domains, not the reverse"
+        - "Minimize operational burden (executive function)"
+    person_extensions:
+      fields: []
+      staleness_days: null

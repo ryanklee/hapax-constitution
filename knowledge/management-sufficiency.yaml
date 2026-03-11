@@ -1,0 +1,793 @@
+# Management Sufficiency Knowledge Model
+# Defines what the management system needs to know to function.
+#
+# Sources:
+#   TT = Team Topologies (Skelton & Pais)
+#   SP = Scaling People (Claire Hughes Johnson)
+#   EP = An Elegant Puzzle (Will Larson)
+#
+# Categories:
+#   foundational (90-100) — system is non-functional without these
+#   structural (60)       — major features degrade without these
+#   enrichment (35)       — improves output quality
+#
+# Check types:
+#   file_exists      — file exists with >50 chars body
+#   min_count        — glob path, parse frontmatter, apply filter, count >= min
+#   field_populated  — all matching notes have non-empty field value
+#   field_coverage   — >= threshold% of matching notes have non-empty field
+#   derived          — computed from other data (custom logic)
+
+version: 1
+requirements:
+
+  # ──────────────────────────────────────────────
+  # FOUNDATIONAL (priority 90-100)
+  # System is non-functional without these.
+  # ──────────────────────────────────────────────
+
+  - id: direct-reports
+    category: foundational
+    description: >
+      Person notes for all direct reports with type, role, team, status.
+      Every management feature depends on these existing.
+    source: "TT, SP, EP"
+    check:
+      type: min_count
+      path: "10-work/people"
+      filter:
+        type: person
+        status: active
+      min: 1
+    acquisition:
+      method: interview
+      question: >
+        Let's set up your team. Who are your direct reports?
+        For each person, I need their name, role, and which team they're on.
+      extraction_schema:
+        type: array
+        items:
+          name: string
+          role: string
+          team: string
+      output: person_note
+    priority: 100
+    depends_on: []
+
+  - id: team-assignment
+    category: foundational
+    description: >
+      Every active person note has a team field populated.
+      Required for team health classification and topology analysis.
+    source: "TT"
+    check:
+      type: field_populated
+      path: "10-work/people"
+      filter:
+        type: person
+        status: active
+      field: team
+    acquisition:
+      method: interview
+      question: >
+        Some of your people don't have a team assigned yet.
+        What team is {name} on?
+      extraction_schema:
+        type: object
+        properties:
+          person: string
+          team: string
+      output: frontmatter_update
+    priority: 95
+    depends_on:
+      - direct-reports
+
+  - id: 1on1-cadence
+    category: foundational
+    description: >
+      Every active person note has a cadence field set.
+      Without cadence, the system cannot detect stale 1:1s or generate prep docs.
+    source: "SP, EP"
+    check:
+      type: field_populated
+      path: "10-work/people"
+      filter:
+        type: person
+        status: active
+      field: cadence
+    acquisition:
+      method: interview
+      question: >
+        How often do you meet 1:1 with {name}?
+        Common cadences are weekly, biweekly, or monthly.
+      extraction_schema:
+        type: object
+        properties:
+          person: string
+          cadence: string
+      output: frontmatter_update
+    priority: 95
+    depends_on:
+      - direct-reports
+
+  - id: manager-context
+    category: foundational
+    description: >
+      The operator's own manager is documented as a person note.
+      Needed for skip-level awareness and upward management prep.
+    source: "SP"
+    check:
+      type: min_count
+      path: "10-work/people"
+      filter:
+        type: person
+        role: manager
+      min: 1
+    acquisition:
+      method: interview
+      question: >
+        Who is your manager? I'll create a person note for them
+        so the system can help you prep for upward conversations too.
+      extraction_schema:
+        type: object
+        properties:
+          name: string
+          role: string
+          title: string
+      output: person_note
+    priority: 90
+    depends_on: []
+
+  - id: company-mission
+    category: foundational
+    description: >
+      Company mission statement documented as a reference.
+      Grounds coaching hypotheses and career conversations in organizational context.
+    source: "SP"
+    check:
+      type: file_exists
+      path: "10-work/references/company-mission.md"
+    acquisition:
+      method: interview
+      question: >
+        What's your company's mission or purpose statement?
+        Even an informal version helps ground management decisions in context.
+      extraction_schema:
+        type: object
+        properties:
+          mission: string
+          source: string
+      output: reference_doc
+    priority: 90
+    depends_on: []
+
+  # ──────────────────────────────────────────────
+  # STRUCTURAL (priority 60)
+  # Major features degrade without these.
+  # ──────────────────────────────────────────────
+
+  - id: operating-principles
+    category: structural
+    description: >
+      Company or team operating principles / values documented.
+      Provides context for coaching and feedback alignment.
+    source: "SP"
+    check:
+      type: file_exists
+      path: "10-work/references/operating-principles.md"
+    acquisition:
+      method: interview
+      question: >
+        Does your company or team have documented operating principles or values?
+        What are they? Even informal ones you personally use count.
+      extraction_schema:
+        type: object
+        properties:
+          principles:
+            type: array
+            items: string
+          source: string
+      output: reference_doc
+    priority: 60
+    depends_on: []
+
+  - id: org-structure
+    category: structural
+    description: >
+      Organizational hierarchy documented — reporting lines, spans of control.
+      Required for skip-level awareness and organizational context in prep.
+    source: "EP"
+    check:
+      type: file_exists
+      path: "10-work/references/org-chart.md"
+    acquisition:
+      method: interview
+      question: >
+        Let's sketch your org structure. Who reports to you, who do you report to,
+        and are there peer managers or skip-level relationships I should know about?
+      extraction_schema:
+        type: object
+        properties:
+          manager: string
+          direct_reports:
+            type: array
+            items: string
+          peer_managers:
+            type: array
+            items: string
+          skip_levels:
+            type: array
+            items: string
+      output: reference_doc
+    priority: 60
+    depends_on:
+      - direct-reports
+      - manager-context
+
+  - id: team-topology-type
+    category: structural
+    description: >
+      Each team has a topology type set (stream-aligned, enabling, complicated-subsystem, platform).
+      Required for interaction mode analysis and cognitive load assessment.
+    source: "TT"
+    check:
+      type: field_coverage
+      path: "10-work/people"
+      filter:
+        type: person
+        status: active
+      field: team-type
+      threshold: 80
+    acquisition:
+      method: interview
+      question: >
+        In Team Topologies terms, what type of team is {team}?
+        The four types are stream-aligned, enabling, complicated-subsystem, and platform.
+      extraction_schema:
+        type: object
+        properties:
+          team: string
+          team_type: string
+      output: frontmatter_update
+    priority: 60
+    depends_on:
+      - direct-reports
+      - team-assignment
+
+  - id: team-interaction-modes
+    category: structural
+    description: >
+      Interaction modes between team pairs documented (collaboration, X-as-a-Service, facilitating).
+      Required for understanding cross-team dynamics and evolution triggers.
+    source: "TT"
+    check:
+      type: file_exists
+      path: "10-work/references/team-interactions.md"
+    acquisition:
+      method: interview
+      question: >
+        How do your teams interact with each other? For each pair of teams,
+        the interaction mode is typically collaboration, X-as-a-Service, or facilitating.
+      extraction_schema:
+        type: object
+        properties:
+          interactions:
+            type: array
+            items:
+              team_a: string
+              team_b: string
+              mode: string
+              notes: string
+      output: reference_doc
+    priority: 60
+    depends_on:
+      - team-topology-type
+
+  - id: operating-cadence
+    category: structural
+    description: >
+      Meeting cadences and operational rhythm documented.
+      Needed to understand ceremony gaps and meeting load.
+    source: "SP"
+    check:
+      type: file_exists
+      path: "10-work/references/operating-cadence.md"
+    acquisition:
+      method: interview
+      question: >
+        Walk me through your operating cadence. What recurring meetings
+        do you have — standups, sprint ceremonies, all-hands, planning sessions?
+        For each, how often and who attends?
+      extraction_schema:
+        type: object
+        properties:
+          cadences:
+            type: array
+            items:
+              name: string
+              frequency: string
+              attendees: string
+              purpose: string
+      output: reference_doc
+    priority: 60
+    depends_on: []
+
+  - id: meeting-ceremonies
+    category: structural
+    description: >
+      At least one meeting note exists per ceremony type.
+      Validates that documented cadences are actually happening.
+    source: "TT, SP, EP"
+    check:
+      type: min_count
+      path: "10-work/meetings"
+      filter:
+        type: meeting-ceremony
+      min: 1
+    acquisition:
+      method: nudge
+      question: null
+      extraction_schema: null
+      output: person_note
+    priority: 60
+    depends_on: []
+
+  - id: key-stakeholders
+    category: structural
+    description: >
+      Person notes exist for non-report stakeholders — skip-levels,
+      executives, key collaborators the operator works with regularly.
+    source: "SP"
+    check:
+      type: min_count
+      path: "10-work/people"
+      filter:
+        type: person
+        role: stakeholder
+      min: 1
+    acquisition:
+      method: interview
+      question: >
+        Beyond your direct reports and manager, who are the key stakeholders
+        you work with regularly? Think skip-levels, executives, partner team leads.
+      extraction_schema:
+        type: array
+        items:
+          name: string
+          role: string
+          relationship: string
+      output: person_note
+    priority: 60
+    depends_on: []
+
+  - id: decision-approach
+    category: structural
+    description: >
+      Decision-making framework documented — how decisions get made,
+      who has authority, escalation paths.
+    source: "SP"
+    check:
+      type: file_exists
+      path: "10-work/references/decision-framework.md"
+    acquisition:
+      method: interview
+      question: >
+        How do decisions get made on your team? Is there a formal framework
+        (RACI, DACI, etc.) or informal norms? Who has final say on what?
+      extraction_schema:
+        type: object
+        properties:
+          framework: string
+          authority_areas:
+            type: array
+            items:
+              area: string
+              decider: string
+          escalation: string
+      output: reference_doc
+    priority: 60
+    depends_on: []
+
+  - id: team-charters
+    category: structural
+    description: >
+      Per-team mission, scope, and boundaries documented.
+      Needed for team health assessment and topology fit analysis.
+    source: "SP"
+    check:
+      type: file_exists
+      path: "10-work/references/team-charters.md"
+    acquisition:
+      method: interview
+      question: >
+        For each of your teams, what's their mission? What are they responsible for,
+        and what's explicitly outside their scope?
+      extraction_schema:
+        type: object
+        properties:
+          charters:
+            type: array
+            items:
+              team: string
+              mission: string
+              scope: string
+              not_scope: string
+      output: reference_doc
+    priority: 60
+    depends_on:
+      - team-assignment
+
+  - id: team-sizing
+    category: structural
+    description: >
+      Team sizes are documented and within healthy range (6-8 per Larson).
+      Derived from person count per team assignment.
+    source: "EP"
+    check:
+      type: derived
+      logic: "Count active people per team. Flag teams outside 6-8 range."
+    acquisition:
+      method: nudge
+      question: null
+      extraction_schema: null
+      output: frontmatter_update
+    priority: 60
+    depends_on:
+      - direct-reports
+      - team-assignment
+
+  # ──────────────────────────────────────────────
+  # ENRICHMENT (priority 35)
+  # Improves output quality.
+  # ──────────────────────────────────────────────
+
+  - id: career-goals
+    category: enrichment
+    description: >
+      Person notes have career-goal-3y field populated.
+      Enables career-aligned coaching and growth vector suggestions.
+    source: "SP, EP"
+    check:
+      type: field_coverage
+      path: "10-work/people"
+      filter:
+        type: person
+        status: active
+      field: career-goal-3y
+      threshold: 50
+    acquisition:
+      method: interview
+      question: >
+        What is {name}'s 3-year career goal, as you understand it?
+        If you haven't discussed it yet, that's fine — we can skip and revisit.
+      extraction_schema:
+        type: object
+        properties:
+          person: string
+          career_goal_3y: string
+      output: frontmatter_update
+    priority: 35
+    depends_on:
+      - direct-reports
+
+  - id: skill-will
+    category: enrichment
+    description: >
+      Person notes have skill-level and will-signal fields.
+      Enables skill/will matrix analysis for coaching approach selection.
+    source: "SP"
+    check:
+      type: field_coverage
+      path: "10-work/people"
+      filter:
+        type: person
+        status: active
+      field: skill-level
+      threshold: 50
+    acquisition:
+      method: interview
+      question: >
+        For {name}, how would you rate their current skill level in their role —
+        developing, proficient, or expert? And their motivation — what signals
+        are you seeing about their engagement?
+      extraction_schema:
+        type: object
+        properties:
+          person: string
+          skill_level: string
+          will_signal: string
+      output: frontmatter_update
+    priority: 35
+    depends_on:
+      - direct-reports
+
+  - id: cognitive-load
+    category: enrichment
+    description: >
+      Person notes have numeric cognitive-load field (1-5).
+      Required for team health classification (Larson four-state model)
+      and cognitive load analysis (Team Topologies).
+    source: "TT, EP"
+    check:
+      type: field_coverage
+      path: "10-work/people"
+      filter:
+        type: person
+        status: active
+      field: cognitive-load
+      threshold: 80
+    acquisition:
+      method: interview
+      question: >
+        On a scale of 1-5, what's your sense of {name}'s current cognitive load?
+        Think about how many contexts they're juggling, whether they seem overwhelmed
+        or have capacity. 1 is light, 5 is overwhelmed.
+      extraction_schema:
+        type: object
+        properties:
+          person: string
+          cognitive_load: integer
+      output: frontmatter_update
+    priority: 35
+    depends_on:
+      - direct-reports
+
+  - id: coaching-hypotheses
+    category: enrichment
+    description: >
+      Active coaching hypothesis documents exist for people who are coaching-active.
+      Enables structured coaching conversation prep.
+    source: "SP"
+    check:
+      type: min_count
+      path: "10-work/coaching"
+      filter: {}
+      min: 1
+    acquisition:
+      method: nudge
+      question: null
+      extraction_schema: null
+      output: reference_doc
+    priority: 35
+    depends_on: []
+
+  - id: working-with-me
+    category: enrichment
+    description: >
+      Operator's own management style document — communication preferences,
+      decision-making style, pet peeves, what they value.
+    source: "SP"
+    check:
+      type: file_exists
+      path: "10-work/references/working-with-me.md"
+    acquisition:
+      method: interview
+      question: >
+        Let's document your management style. How do you prefer to communicate?
+        What do you value in your reports? Any pet peeves or things people
+        should know about working with you?
+      extraction_schema:
+        type: object
+        properties:
+          communication_style: string
+          values: string
+          pet_peeves: string
+          decision_style: string
+          availability: string
+      output: reference_doc
+    priority: 35
+    depends_on: []
+
+  - id: feedback-style
+    category: enrichment
+    description: >
+      Per-person feedback preferences documented.
+      Enables tailored feedback delivery approach in prep docs.
+    source: "SP"
+    check:
+      type: field_coverage
+      path: "10-work/people"
+      filter:
+        type: person
+        status: active
+      field: feedback-style
+      threshold: 50
+    acquisition:
+      method: interview
+      question: >
+        How does {name} prefer to receive feedback? Some people want it direct
+        and immediate, others prefer written, some need time to process.
+        What works for them?
+      extraction_schema:
+        type: object
+        properties:
+          person: string
+          feedback_style: string
+      output: frontmatter_update
+    priority: 35
+    depends_on:
+      - direct-reports
+
+  - id: growth-vectors
+    category: enrichment
+    description: >
+      Per-person development areas / growth vectors documented.
+      Enables targeted development suggestions in 1:1 prep.
+    source: "EP"
+    check:
+      type: field_coverage
+      path: "10-work/people"
+      filter:
+        type: person
+        status: active
+      field: growth-vector
+      threshold: 50
+    acquisition:
+      method: interview
+      question: >
+        What's the main area you're trying to help {name} grow in right now?
+        This could be a technical skill, leadership capability, or a specific
+        behavior change.
+      extraction_schema:
+        type: object
+        properties:
+          person: string
+          growth_vector: string
+      output: frontmatter_update
+    priority: 35
+    depends_on:
+      - direct-reports
+
+  - id: cross-team-deps
+    category: enrichment
+    description: >
+      Cross-team dependency and interaction patterns documented.
+      Enables proactive identification of coordination bottlenecks.
+    source: "TT"
+    check:
+      type: file_exists
+      path: "10-work/references/cross-team-deps.md"
+    acquisition:
+      method: interview
+      question: >
+        What are the key dependencies between your teams? Where does work
+        get handed off, and where do bottlenecks tend to form?
+      extraction_schema:
+        type: object
+        properties:
+          dependencies:
+            type: array
+            items:
+              from_team: string
+              to_team: string
+              dependency_type: string
+              bottleneck_risk: string
+      output: reference_doc
+    priority: 35
+    depends_on:
+      - team-assignment
+
+  - id: team-api
+    category: enrichment
+    description: >
+      Team boundaries, interfaces, and communication contracts documented.
+      Formalizes how teams interact and what they provide to each other.
+    source: "TT"
+    check:
+      type: file_exists
+      path: "10-work/references/team-api.md"
+    acquisition:
+      method: interview
+      question: >
+        If your teams had an API, what would it look like? What does each team
+        provide to others, what do they consume, and what's the expected
+        response time or SLA?
+      extraction_schema:
+        type: object
+        properties:
+          teams:
+            type: array
+            items:
+              team: string
+              provides:
+                type: array
+                items: string
+              consumes:
+                type: array
+                items: string
+              sla: string
+      output: reference_doc
+    priority: 35
+    depends_on:
+      - team-assignment
+
+  - id: performance-framework
+    category: enrichment
+    description: >
+      Career ladder and performance framework documented.
+      Grounds career conversations and growth vectors in organizational expectations.
+    source: "SP, EP"
+    check:
+      type: file_exists
+      path: "10-work/references/career-ladder.md"
+    acquisition:
+      method: interview
+      question: >
+        Does your company have a career ladder or performance framework?
+        What are the levels, and how are people evaluated?
+        If there's a doc you can share, that works too.
+      extraction_schema:
+        type: object
+        properties:
+          levels:
+            type: array
+            items:
+              level: string
+              description: string
+          evaluation_criteria: string
+          review_cadence: string
+      output: reference_doc
+    priority: 35
+    depends_on: []
+
+  - id: evolution-triggers
+    category: enrichment
+    description: >
+      Team topology evolution triggers documented — signals that indicate
+      when a team should change type, split, merge, or shift interaction modes.
+    source: "TT"
+    check:
+      type: file_exists
+      path: "10-work/references/evolution-triggers.md"
+    acquisition:
+      method: interview
+      question: >
+        What signals tell you a team needs to change? Think about things like
+        growing cognitive load, frequent cross-team blockers, teams that have
+        outgrown their scope, or interaction modes that aren't working anymore.
+      extraction_schema:
+        type: object
+        properties:
+          triggers:
+            type: array
+            items:
+              signal: string
+              affected_team: string
+              suggested_action: string
+      output: reference_doc
+    priority: 35
+    depends_on:
+      - team-topology-type
+
+  - id: dora-metrics
+    category: enrichment
+    description: >
+      DORA metrics tracking — deployment frequency, lead time for changes,
+      mean time to recovery, change failure rate. Proxy for team health
+      in engineering organizations.
+    source: "EP"
+    check:
+      type: file_exists
+      path: "10-work/references/dora-metrics.md"
+    acquisition:
+      method: interview
+      question: >
+        Do you track DORA metrics (deployment frequency, lead time,
+        MTTR, change failure rate)? Where does that data live?
+        If you don't track them formally, do you have a sense of
+        where each team stands?
+      extraction_schema:
+        type: object
+        properties:
+          tracked: boolean
+          tool: string
+          metrics:
+            type: object
+            properties:
+              deployment_frequency: string
+              lead_time: string
+              mttr: string
+              change_failure_rate: string
+      output: reference_doc
+    priority: 35
+    depends_on: []

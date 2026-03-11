@@ -1,0 +1,141 @@
+# Document Registry — consumed by drift_detector for coverage enforcement.
+#
+# Defines document archetypes, per-repo required documents, CI-to-document
+# coverage rules, and cross-repo mutual awareness constraints.
+#
+# Formal foundations:
+#   - CMDB: CIs with typed relationships to documentation
+#   - DITA: Document archetypes with required structural sections
+#   - ADR: Design records as a first-class archetype
+#
+# See: docs/plans/2026-03-09-document-registry-design.md
+
+version: 1
+
+# ── Document archetypes ──────────────────────────────────────────────
+archetypes:
+  project-context:
+    description: "Per-repo working context for Claude Code"
+    required_sections:
+      - "## Project Memory"
+      - "## Conventions"
+    composite: true
+  specification:
+    description: "Architectural design, invariants, contracts"
+    required_sections:
+      - "## Architecture"
+    composite: false
+  reference:
+    description: "Canonical lookup tables, single source of truth"
+    required_sections: []
+    composite: false
+  operational:
+    description: "Procedures, workflows, troubleshooting"
+    required_sections: []
+    composite: false
+  governance:
+    description: "Axioms, rules, constraints, boundaries"
+    required_sections: []
+    composite: false
+  design-record:
+    description: "Point-in-time design decisions"
+    required_sections:
+      - "## Goal"
+    composite: false
+
+# ── Repo declarations ────────────────────────────────────────────────
+repos:
+  ai-agents:
+    path: ~/projects/ai-agents
+    required_docs:
+      - path: CLAUDE.md
+        archetype: project-context
+    ci_sources:
+      agents: "agents/"
+  hapaxromana:
+    path: ~/projects/hapaxromana
+    required_docs:
+      - path: CLAUDE.md
+        archetype: project-context
+      - path: agent-architecture.md
+        archetype: specification
+      - path: operations-manual.md
+        archetype: operational
+      - path: README.md
+        archetype: project-context
+  hapax-system:
+    path: ~/projects/hapax-system
+    required_docs:
+      - path: CLAUDE.md
+        archetype: project-context
+      - path: rules/axioms.md
+        archetype: governance
+      - path: rules/system-context.md
+        archetype: reference
+      - path: rules/management-context.md
+        archetype: governance
+  cockpit-web:
+    path: ~/projects/cockpit-web
+    required_docs:
+      - path: CLAUDE.md
+        archetype: project-context
+  hapax-vscode:
+    path: ~/projects/hapax-vscode
+    required_docs:
+      - path: CLAUDE.md
+        archetype: project-context
+  obsidian-hapax:
+    path: ~/projects/obsidian-hapax
+    required_docs:
+      - path: CLAUDE.md
+        archetype: project-context
+
+# ── Coverage rules ───────────────────────────────────────────────────
+# "For every CI of type X, there must be a reference in document Y."
+coverage_rules:
+  - ci_type: agent
+    reference_doc: "~/projects/hapax-system/rules/system-context.md"
+    reference_section: "## Management Agents"
+    match_by: name
+    severity: medium
+    description: "Every agent module must have a row in system-context.md"
+  - ci_type: agent
+    reference_doc: "~/projects/hapaxromana/agent-architecture.md"
+    match_by: name_in_heading
+    severity: low
+    description: "Every agent should have a section in agent-architecture.md"
+  - ci_type: timer
+    reference_doc: "~/projects/hapax-system/rules/system-context.md"
+    reference_section: "## Management Timers"
+    match_by: name
+    severity: medium
+    description: "Every systemd timer must have a row in system-context.md"
+  - ci_type: service
+    reference_doc: "~/.claude/rules/environment.md"
+    match_by: name
+    severity: medium
+    description: "Every Docker service must be documented in environment.md"
+  - ci_type: repo
+    reference_doc: "~/projects/hapaxromana/CLAUDE.md"
+    reference_section: "## Related Repos"
+    match_by: name
+    severity: medium
+    description: "Every hapax repo must appear in hapaxromana's Related Repos"
+  - ci_type: mcp_server
+    reference_doc: "~/.claude/CLAUDE.md"
+    reference_section: "## MCP Servers"
+    match_by: name
+    severity: low
+    description: "Every MCP server should be listed in global CLAUDE.md"
+
+# ── Mutual awareness ────────────────────────────────────────────────
+mutual_awareness:
+  - type: repo_registry
+    description: "All hapax repos must appear in hapaxromana's Related Repos"
+    registry_doc: "~/projects/hapaxromana/CLAUDE.md"
+    registry_section: "## Related Repos"
+    severity: medium
+  - type: spec_reference
+    description: "Every repo should reference hapaxromana as spec source"
+    target_phrase: "hapaxromana"
+    severity: low
