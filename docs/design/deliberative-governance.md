@@ -295,6 +295,148 @@ The existing governance system is a legal code. This adds a judiciary. Legal cod
 
 The prototype is small (two agents, one orchestrator, one data model, filesystem storage). The integration surface is narrow (supremacy validation, precedent store, briefing, health monitor). The value is testable: run deliberation on the 6 supremacy tensions resolved earlier today and compare the tension maps against the operator's actual rulings.
 
+## Observability
+
+The deliberative process must be explicit, transparent, inspectable, and queryable. Every other major subsystem in the stack — LLM calls (Langfuse), infrastructure (health monitor), documents (Qdrant), voice daemon (EventLog + OTel), axiom enforcement (audit JSONL) — has structured observability. Deliberation currently has none beyond YAML file storage and a briefing mention. This section specifies the observability contract.
+
+### Principles
+
+**Every deliberation is a trace.** The orchestrator creates a Langfuse trace (via OTel) at deliberation start. Each LLM call within the deliberation — question framing, round 1 Publius, round 1 Brutus, round 2+, pre-mortem, tension map synthesis — is a child span. The trace carries the deliberation ID as a tag. This connects deliberation to the existing Langfuse infrastructure without new tooling.
+
+**Every round is an addressable record.** The `RoundOutput` model is not just internal state — it is written to disk as it is produced. If a deliberation fails mid-exchange (LLM error, timeout, operator interrupt), the rounds completed so far are preserved and inspectable. Partial deliberations are valid artifacts.
+
+**The process is the record.** The deliberation record stores the full exchange history (`rounds: list[RoundOutput]`), not just final positions. An operator reading a deliberation record sees the same thing they would see watching the exchange in real time: who said what, what they conceded, what moved, and why.
+
+### Trace structure
+
+```
+deliberation trace (deliberation-2026-03-12-001)
+├─ span: question_framing
+│   metadata: {trigger_type, relevant_axioms, relevant_implications}
+├─ span: context_assembly
+│   metadata: {precedents_retrieved, dissents_found, context_token_count}
+├─ span: round_1_publius
+│   metadata: {canon_applied, refutation_conditions_count, update_conditions_count}
+│   output: AgentArgument (structured)
+├─ span: round_1_brutus
+│   metadata: {canon_applied, refutation_conditions_count, update_conditions_count}
+│   output: AgentArgument (structured)
+├─ span: round_2_brutus
+│   metadata: {claims_attacked_count, concessions_count, position_movement}
+│   output: RoundOutput (structured)
+├─ span: round_3_publius
+│   metadata: {claims_attacked_count, concessions_count, position_movement}
+│   output: RoundOutput (structured)
+├─ span: pre_mortem
+│   metadata: {failure_modes_count}
+├─ span: tension_map_synthesis
+│   metadata: {disagreement_type, termination_condition}
+│   output: TensionMap (structured)
+└─ span: record_write
+    metadata: {file_path, dissent_recorded}
+```
+
+Each span carries:
+- `deliberation_id` (trace-level tag, queryable in Langfuse)
+- `agent` (publius | brutus | orchestrator)
+- `round` (integer)
+- Model, tokens, latency (auto-instrumented via existing OTel httpx hook)
+
+### Filesystem records
+
+Deliberation records are written to `profiles/deliberations/` as YAML. Two levels of granularity:
+
+**Full record** (`deliberation-2026-03-12-001.yaml`): The complete `DeliberationRecord` including all rounds, final positions, tension map. This is the canonical artifact. It is self-contained — readable without access to the trace, the precedent store, or the exchange history.
+
+**Round log** (`deliberation-2026-03-12-001.rounds.jsonl`): One JSON line per round, written as each round completes. Enables streaming observation of in-progress deliberations and preserves partial state on failure. Each line is a serialized `RoundOutput`.
+
+The full record is written atomically after the deliberation completes. The round log is append-only during execution.
+
+### Queryable storage
+
+Deliberation records are indexed for two query patterns:
+
+**Structured queries** (JSONL index): `profiles/deliberations/index.jsonl` contains one line per deliberation with extracted fields:
+
+```json
+{
+  "id": "deliberation-2026-03-12-001",
+  "created": "2026-03-12T14:30:00Z",
+  "trigger_type": "supremacy_tension",
+  "axioms": ["single_user", "management_governance"],
+  "implications": ["mg-boundary-001", "ex-err-001"],
+  "status": "pending_operator_review",
+  "termination": "crux_identification",
+  "rounds": 4,
+  "concessions_total": 2,
+  "disagreement_type": "factual",
+  "canons": ["textualist", "purposivist"],
+  "operator_ruling_canon": null,
+  "novel_insight_summary": "mg-boundary-001 does not specify ...",
+  "trace_id": "abc123..."
+}
+```
+
+This index supports the Phase 3 evolution queries without requiring YAML parsing:
+- "Which axioms produce the most deliberation?" → filter by `axioms`, count
+- "Which implications accumulate the most dissents?" → cross-reference with dissent store
+- "What canons do operator rulings favor?" → filter by `operator_ruling_canon`
+- "Are deliberations converging or hitting round limits?" → aggregate `termination` field
+- "How many concessions per deliberation on average?" → aggregate `concessions_total`
+
+**Semantic queries** (Qdrant): The tension map's `novel_insight` field is embedded and stored in the `documents` collection with metadata `{source_service: "deliberation", content_type: "novel_insight", deliberation_id: "..."}`. This enables semantic search over deliberation insights — "find deliberations where the novel insight relates to authentication scoping" — using the existing `search_documents()` infrastructure.
+
+### Cockpit API endpoints
+
+```
+GET  /api/data/deliberations              # list all, filterable by status/axiom/trigger_type
+GET  /api/data/deliberations/:id          # full record
+GET  /api/data/deliberations/:id/rounds   # round-by-round exchange
+GET  /api/data/deliberations/:id/trace    # Langfuse trace link
+GET  /api/data/deliberations/stats        # aggregate statistics (for Phase 3 queries)
+POST /api/data/deliberations/:id/rule     # record operator ruling (writes precedent)
+```
+
+The SPA can render a deliberation as a threaded exchange: round 1 positions side by side, then alternating rounds with concessions highlighted, then the tension map, then the pre-mortem failure modes. The operator rules from this view.
+
+### Health monitor integration
+
+Three checks, all in the `governance` check group:
+
+**check_deliberation_staleness** (tier 2): Any deliberation in `pending_operator_review` for >7 days is DEGRADED. >14 days is FAILED. Remediation: `uv run python -m agents.deliberate --pending`.
+
+**check_deliberation_process_health** (tier 3): Computed from the index. If >50% of deliberations in the last 30 days terminated via `round_limit` (rather than convergence or crux identification), the process is not narrowing effectively. DEGRADED. Remediation: review agent prompts for disconfirmation and update condition quality.
+
+**check_dissent_accumulation** (tier 2): Any implication with ≥3 unresolved dissents that has not triggered a deliberation is FAILED — the trigger mechanism is broken. Remediation: `uv run python -m agents.deliberate --trigger dissent_threshold --implication-id <id>`.
+
+### Briefing integration
+
+The briefing consumes deliberation state at two levels:
+
+**Pending deliberations**: Count, age, and one-line summary of each pending deliberation. High priority if any are >7 days old.
+
+**Process health**: If `check_deliberation_process_health` is DEGRADED, the briefing surfaces it as an action item: "Deliberation process is not converging — N of M recent deliberations hit the round limit."
+
+**Resolved deliberations**: When an operator rules on a deliberation, the next briefing confirms the ruling and the precedent created.
+
+### Self-inspection
+
+The deliberative system inspects its own behavior through three mechanisms, consistent with the existing self-inspection patterns (drift detection, sufficiency probes, emergence detection).
+
+**Convergence rate tracking.** The index supports computing: what fraction of deliberations converge vs. hit round limits vs. identify cruxes vs. surface incompatibilities? A system where most deliberations hit the round limit is not deliberating effectively — it is producing parallel position statements with extra steps. This is the process-level equivalent of drift detection: comparing the process's actual behavior to its intended behavior.
+
+**Agent bias detection.** If operator rulings consistently favor one agent (>70% Publius or >70% Brutus over a rolling 20-deliberation window), the agent prompts may be miscalibrated. One agent may be systematically stronger or weaker than intended. This is analogous to sufficiency probes — checking that the system actively supports its own design intent, not just avoids violating it.
+
+**Canon drift detection.** If operator rulings consistently apply a different canon than the deliberating agents proposed (e.g., operators rule purposivist when both agents argued textualist), the assigned canon for those implications may be wrong. Track `(implication_id, canon_in_implication_yaml, canon_in_operator_ruling)` tuples. Persistent divergence signals that the implication's canon field needs updating. This is the governance equivalent of the drift detector — comparing declared interpretive methodology to actual interpretive practice.
+
+**Update condition quality.** If agents rarely check their pre-committed update conditions as met (low concession rate despite multi-round exchange), the update conditions may be too narrow or too abstract to be actionable. Track `update_conditions_checked.met == true` rate. Persistent low rates signal that the disconfirmation mechanism is theatrical rather than functional — the agents commit to update conditions they never actually meet. This is the deliberation-specific anti-pattern detector.
+
+### What observability does not do
+
+- Does not add latency to enforcement. Tracing is fire-and-forget (OTel BatchSpanProcessor). Enforcement remains synchronous and unblocked.
+- Does not require new infrastructure. Uses existing Langfuse (traces), Qdrant (semantic index), health monitor (checks), briefing (consumption), cockpit API (exposure).
+- Does not observe operator reasoning. The operator's ruling is recorded, but the operator's internal reasoning process is not traced. The system observes its own deliberation, not the operator's decision-making.
+
 ## References
 
 - `deliberative-process-analysis.md` — Feature classification with cross-tradition evidence (necessary vs incidental vs not valuable)
