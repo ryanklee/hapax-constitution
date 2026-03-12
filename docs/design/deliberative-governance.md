@@ -8,17 +8,29 @@ Constitutional law faced the same problem. Static legal codes cannot anticipate 
 
 ## Theoretical grounding
 
-Five mechanisms from constitutional theory inform this design.
+The design draws from constitutional theory and cross-tradition deliberative practices research. See `deliberative-process-analysis.md` for the full feature classification with empirical evidence.
 
-**Pseudonymous composite agents (Federalist Papers).** Hamilton, Madison, and Jay wrote as "Publius" — a composite rhetorical agent with a coherent position distinct from any individual author. The pseudonym forced internal reconciliation before publication and depersonalized argument, requiring evaluation of reasoning rather than reputation. The Anti-Federalists ("Brutus," "Federal Farmer," "Centinel") were uncoordinated, which let them attack from any angle. This asymmetry was productive: the Federalists built comprehensive positive cases; the Anti-Federalists identified failure modes the Federalists missed. The Bill of Rights exists because of this asymmetry.
+### Constitutional theory
 
 **Incompletely theorized agreements (Sunstein).** Functional governance does not require agreement on foundational principles. Participants can agree on outcomes while disagreeing about why. Axioms are deliberately underdetermined — `executive_function` means something specific to the operator but leaves room for contextual interpretation. Full specification is not the goal. Productive ambiguity that enables coordination without forced consensus is.
 
-**Framework originalism (Balkin).** Constitutions contain both rules (specific, determinate — T0 implications) and standards/principles (abstract, requiring construction — the axioms themselves). Trying to enumerate every violation in advance produces a brittle system. The interpretive canon's purposivist mode is framework originalism: interpret the axiom according to its purpose, not its literal text.
+**Framework originalism (Balkin).** Constitutions contain both rules (specific, determinate — T0 implications) and standards/principles (abstract, requiring construction — the axioms themselves). The interpretive canon's purposivist mode is framework originalism: interpret the axiom according to its purpose, not its literal text.
 
-**Constitutional moments (Ackerman).** Democratic life operates on two tracks: normal politics (incremental, representative) and constitutional moments (rare structural revision by an engaged citizenry). The governance system should resist axiom changes during normal operation but enable them when the operator deliberately initiates structural revision. Axiom amendments require a higher threshold of deliberation than configuration changes.
+**Constitutional moments (Ackerman).** The governance system should resist axiom changes during normal operation but enable them when the operator deliberately initiates structural revision. Axiom amendments require a higher threshold of deliberation than configuration changes.
 
-**Dissents as precedent seeds (Hughes, Varsava).** A dissent is "an appeal to the intelligence of a future day." When the governance layer blocks an action and the agent's reasoning explains why the action should have been permitted, that blocked-action-plus-reasoning is a dissent. Accumulated dissents against a particular implication signal that the implication may need revision. The precedent store records these; the deliberative layer surfaces them.
+**Dissents as precedent seeds (Hughes, Varsava).** A dissent is "an appeal to the intelligence of a future day." Accumulated dissents against a particular implication signal that the implication may need revision. The formalization requirement (full reasoning, not just disagreement) is load-bearing — informal disagreement has no future generative potential.
+
+### Deliberative practices
+
+**Information before deliberation (Fishkin).** Participants who deliberate with a shared factual baseline produce qualitatively different outcomes than those who deliberate from prior beliefs alone. The single most robustly supported finding in deliberative democracy research.
+
+**Disconfirmation focus (ACH, adversarial collaboration).** Requiring participants to identify what would *refute* their position, rather than what supports it, consistently improves outcomes. Confirmation bias is the single most damaging pattern in deliberation.
+
+**Pre-commitment to update conditions (Kahneman).** Specifying in advance what evidence would change your mind prevents post-hoc rationalization. This distinguishes genuine deliberation from rationalized advocacy.
+
+**Proportionality screening (Alexy).** When values conflict, screen for suitability and necessity before balancing. This sequential screening reduces the space of genuine dilemmas.
+
+**Question-first structure (IBIS, Socratic method).** Deliberation begins by articulating the question, not staking positions. Prevents premature commitment and ensures participants address the same question.
 
 ## Design
 
@@ -165,21 +177,39 @@ class AgentArgument(BaseModel):
     canon_applied: str               # textualist | purposivist | absurdity | omitted-case
     supporting_precedents: list[str]  # precedent IDs cited
     proposed_resolution: str          # what should happen
+    refutation_conditions: list[str]  # what evidence would make this position wrong
+    update_conditions: list[str]      # what the other agent could say to trigger concession
+    values_promoted: list[str]        # governance values this position serves
+
+class RoundOutput(BaseModel):
+    round: int
+    agent: str                       # publius | brutus
+    responds_to: str | None          # round reference (null for round 1)
+    claims_attacked: list[dict]      # claim, attack, attack_type
+    update_conditions_checked: list[dict]  # condition, met (bool), reasoning
+    concessions: list[str]           # conceded points (first-class)
+    position_movement: str           # what changed and why
+    values_promoted: list[str]
 
 class TensionMap(BaseModel):
     agreement: str       # where both agents agree
     disagreement: str    # where they diverge
+    disagreement_type: str  # factual | value_based
     novel_insight: str   # what emerged from the exchange
+    failure_modes: list[str]  # from pre-mortem round
 
 class DeliberationRecord(BaseModel):
     id: str
+    question: str        # IBIS-style question framing
     trigger: DeliberationTrigger
-    publius: AgentArgument
-    brutus: AgentArgument
+    rounds: list[RoundOutput]        # full exchange history
+    publius_final: AgentArgument     # final position after exchange
+    brutus_final: AgentArgument      # final position after exchange
     tension_map: TensionMap
     status: Literal["pending_operator_review", "resolved", "deferred"]
     operator_ruling: str | None
     ruling_precedent_id: str | None  # precedent created from ruling
+    dissent_id: str | None           # if minority position recorded as dissent
     created: datetime
     resolved: datetime | None
 
@@ -196,17 +226,22 @@ class Dissent(BaseModel):
 
 ## Agent implementation
 
-Both Publius and Brutus are Pydantic AI agents with fixed system prompts that encode their rhetorical position. They receive identical input context and produce `AgentArgument` as structured output.
+Both Publius and Brutus are Pydantic AI agents with fixed system prompts that encode their rhetorical position. They produce `AgentArgument` as structured output, which now includes disconfirmation and update condition fields.
 
 The deliberation orchestrator:
 1. Receives a governance event
-2. Gathers context: relevant axioms, implications, precedents, dissents, operator profile
-3. Invokes Publius and Brutus in parallel (independent, no cross-talk)
-4. Generates the tension map (a third LLM call that synthesizes both arguments)
-5. Writes the deliberation record to the filesystem (`profiles/deliberations/`)
-6. If the trigger was a supremacy tension, links the deliberation to the tension in `validate_supremacy()` output
+2. Frames the event as a question (IBIS-style question articulation, not a raw tension description)
+3. Gathers context: relevant axioms, implications, precedents, dissents, operator profile
+4. Provides identical context to both agents *before* either stakes a position
+5. Invokes Publius and Brutus in parallel for round 1 (initial positions, responding to the question)
+6. From round 2 onward: sequential alternating exchange. Each agent reads the previous round's output and must respond to specific claims, check its own pre-committed update conditions, and track concessions.
+7. Continues until a termination condition is met (convergence, crux identification, round limit, concession cascade, or incompatibility)
+8. Runs a collaborative pre-mortem round: both agents assume the proposed resolution was implemented and generate failure modes
+9. Generates the tension map from the exchange history (agreement, disagreement, novel insight, and failure modes)
+10. Records minority position as formal dissent in the precedent store if no convergence
+11. Writes the deliberation record to the filesystem (`profiles/deliberations/`)
 
-The tension map synthesis is the critical step. It is not a summary. It identifies: where both agents agree (this narrows the decision space), where they disagree (this is the actual decision the operator must make), and what novel insight emerged (this is why the process exists — the thing neither agent would have produced alone).
+The tension map is not a third-party synthesis of static outputs. It emerges from the exchange — tracking where positions converged, where concessions occurred, and what considerations neither agent raised in round 1 but surfaced through the exchange. This is why the process exists: the generative output is the movement, not the arguments.
 
 ## Invocation
 
@@ -231,10 +266,11 @@ Autonomous invocation via systemd timer is possible but not recommended initiall
 ## Prototype scope
 
 Phase 1 (prototype):
-- Publius and Brutus agents with fixed system prompts
-- Deliberation orchestrator (trigger → context gathering → parallel invocation → tension map → record)
+- Publius and Brutus agents with fixed system prompts including disconfirmation and update condition obligations
+- Deliberation orchestrator (question framing → context assembly → round 1 parallel → rounds 2+ sequential → pre-mortem → tension map → record)
+- Multi-round exchange with concession tracking and position movement
 - Deliberation record storage on filesystem (`profiles/deliberations/*.yaml`)
-- Dissent recording in precedent store (new `Dissent` model)
+- Formal dissent recording in precedent store when no convergence
 - CLI interface (`agents.deliberate`)
 - Tests (mocked LLM, deterministic trigger/context/output)
 
@@ -258,3 +294,8 @@ The existing governance system is a legal code. This adds a judiciary. Legal cod
 3. **Canon evolution** that lets the interpretive methodology adapt based on how operator rulings diverge from assigned canons
 
 The prototype is small (two agents, one orchestrator, one data model, filesystem storage). The integration surface is narrow (supremacy validation, precedent store, briefing, health monitor). The value is testable: run deliberation on the 6 supremacy tensions resolved earlier today and compare the tension maps against the operator's actual rulings.
+
+## References
+
+- `deliberative-process-analysis.md` — Feature classification with cross-tradition evidence (necessary vs incidental vs not valuable)
+- `distro-work/research/deliberative-practices-structural-analysis.md` — Full source research across 8 deliberative traditions
