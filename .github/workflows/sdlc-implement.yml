@@ -1,0 +1,144 @@
+name: "SDLC: Implementation"
+
+on:
+  repository_dispatch:
+    types: [sdlc-plan]
+  pull_request_review:
+    types: [submitted]
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+concurrency:
+  group: sdlc-implement-${{ github.event.client_payload.issue_number || github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  implement:
+    # Run on dispatch (new implementation) or changes_requested (fix round)
+    if: >-
+      github.event_name == 'repository_dispatch' ||
+      (github.event.review.state == 'changes_requested' &&
+       startsWith(github.event.pull_request.head.ref, 'agent/') &&
+       contains(github.event.pull_request.labels.*.name, 'agent-authored'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: astral-sh/setup-uv@v5
+      - run: uv sync
+
+      - name: Resolve issue number
+        id: issue
+        run: |
+          if [ "${{ github.event_name }}" = "repository_dispatch" ]; then
+            echo "number=${{ github.event.client_payload.issue_number }}" >> "$GITHUB_OUTPUT"
+          else
+            # Extract from PR body or branch name
+            BRANCH="${{ github.event.pull_request.head.ref }}"
+            NUMBER=$(echo "$BRANCH" | grep -oP '\d+$' || echo "")
+            echo "number=$NUMBER" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Fetch issue context
+        id: context
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          ISSUE=${{ steps.issue.outputs.number }}
+          TITLE=$(gh issue view "$ISSUE" --json title --jq '.title')
+          BODY=$(gh issue view "$ISSUE" --json body --jq '.body')
+          LABELS=$(gh issue view "$ISSUE" --json labels --jq '[.labels[].name] | join(",")')
+          echo "title=$TITLE" >> "$GITHUB_OUTPUT"
+          echo "labels=$LABELS" >> "$GITHUB_OUTPUT"
+          echo "$BODY" > /tmp/issue-body.txt
+
+      - name: Create or checkout branch
+        run: |
+          ISSUE=${{ steps.issue.outputs.number }}
+          BRANCH="agent/issue-${ISSUE}"
+          if git ls-remote --heads origin "$BRANCH" | grep -q "$BRANCH"; then
+            git checkout "$BRANCH"
+            git pull origin "$BRANCH"
+          else
+            git checkout -b "$BRANCH"
+          fi
+
+      - name: Run Claude Code implementation
+        uses: anthropics/claude-code-action@beta
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          claude_args: "--model claude-sonnet-4-6 --max-turns 10 --allowedTools Bash,Read,Edit,Write,Glob,Grep"
+          prompt: |
+            You are editing a governance specification, not application code.
+            This repo contains YAML axiom definitions, domain models, knowledge schemas, and documentation.
+
+            ## Issue #${{ steps.issue.outputs.number }}: ${{ steps.context.outputs.title }}
+
+            $(cat /tmp/issue-body.txt)
+
+            ## Rules
+            - YAML files must pass `yamllint -d relaxed`
+            - Do NOT add new axioms to axioms/registry.yaml — that requires operator decision
+            - Do NOT modify axiom weights in axioms/registry.yaml
+            - You MAY edit: implications, precedents, domain YAML, markdown docs, knowledge models
+            - Run `yamllint -d relaxed axioms/ domains/ knowledge/` to verify YAML
+            - Run `uv run pytest` to verify tests pass
+            - Make focused, minimal changes that address the issue
+
+      - name: Commit and push
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git config user.name "claude-code[bot]"
+          git config user.email "claude-code[bot]@users.noreply.github.com"
+          if git diff --quiet && git diff --cached --quiet; then
+            echo "No changes produced."
+            gh issue comment ${{ steps.issue.outputs.number }} --body "Implementation agent could not produce changes. Flagging for human review." || true
+            gh issue edit ${{ steps.issue.outputs.number }} --add-label "needs-human" || true
+            exit 0
+          fi
+          ISSUE=${{ steps.issue.outputs.number }}
+          git add -A
+          git commit -m "feat: implement issue #${ISSUE}
+
+          Automated implementation by Claude Code.
+
+          Closes #${ISSUE}
+
+          Co-Authored-By: Claude Sonnet <noreply@anthropic.com>"
+          git push -u origin "agent/issue-${ISSUE}"
+
+      - name: Create or update PR
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          ISSUE=${{ steps.issue.outputs.number }}
+          BRANCH="agent/issue-${ISSUE}"
+          EXISTING_PR=$(gh pr list --head "$BRANCH" --json number --jq '.[0].number // empty')
+          if [ -n "$EXISTING_PR" ]; then
+            echo "PR #$EXISTING_PR already exists for this branch."
+          else
+            gh pr create \
+              --title "feat: ${{ steps.context.outputs.title }}" \
+              --body "## Summary
+
+          Automated implementation for #${ISSUE}.
+
+          ## Verification
+          - [ ] YAML lint passes
+          - [ ] Tests pass
+          - [ ] Changes are scoped to the issue
+
+          ---
+          🤖 Agent-authored implementation" \
+              --label "agent-authored" \
+              --head "$BRANCH"
+          fi

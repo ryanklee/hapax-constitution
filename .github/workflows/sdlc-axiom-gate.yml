@@ -31,6 +31,8 @@ jobs:
 
       - name: Run axiom compliance gate
         id: gate
+        env:
+          LANGFUSE_EXPORT_FILE: /tmp/langfuse-traces.jsonl
         run: |
           set -eo pipefail
           OUTPUT=$(uv run python -m scripts.sdlc_axiom_judge --pr-number ${{ github.event.pull_request.number }})
@@ -68,3 +70,11 @@ jobs:
             -X POST \
             -f event=REQUEST_CHANGES \
             -f body="Axiom compliance gate BLOCKED this PR. See gate results above."
+
+      - name: Upload traces
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: langfuse-traces-gate-${{ github.event.pull_request.number }}
+          path: /tmp/langfuse-traces.jsonl
+          if-no-files-found: ignore

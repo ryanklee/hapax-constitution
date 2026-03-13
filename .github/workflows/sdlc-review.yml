@@ -34,6 +34,7 @@ jobs:
         id: review
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          LANGFUSE_EXPORT_FILE: /tmp/langfuse-traces.jsonl
         run: |
           set -eo pipefail
           OUTPUT=$(uv run python -m scripts.sdlc_review --pr-number ${{ github.event.pull_request.number }})
@@ -77,3 +78,11 @@ jobs:
             -X POST \
             -f event=APPROVE \
             -f body="Adversarial review passed. Triggering axiom compliance gate."
+
+      - name: Upload traces
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: langfuse-traces-review-${{ github.event.pull_request.number }}
+          path: /tmp/langfuse-traces.jsonl
+          if-no-files-found: ignore
