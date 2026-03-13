@@ -27,6 +27,7 @@ jobs:
         id: triage
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          LANGFUSE_EXPORT_FILE: /tmp/langfuse-traces.jsonl
         run: |
           set -eo pipefail
           OUTPUT=$(uv run python -m scripts.sdlc_triage --issue-number ${{ github.event.issue.number }})
@@ -87,3 +88,11 @@ jobs:
           gh issue comment ${{ github.event.issue.number }} --body "## Triage Failed
 
           The triage agent encountered an error. See [workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details."
+
+      - name: Upload traces
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: langfuse-traces-triage-${{ github.event.issue.number }}
+          path: /tmp/langfuse-traces.jsonl
+          if-no-files-found: ignore
