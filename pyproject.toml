@@ -45,5 +45,6 @@ known-first-party = ["sdlc", "demo", "shared", "scripts"]
 
 [dependency-groups]
 dev = [
+    "pre-commit>=4.0",
     "pytest>=9.0.2",
 ]
