@@ -31,7 +31,7 @@ Four axioms govern the current implementations:
 | `corporate_boundary` | 90 | Work data stays in employer systems. Graceful degradation when crossing network boundaries. |
 | `management_governance` | 85 | LLMs prepare context; humans deliver words to other humans. No generated feedback language or coaching recommendations about individuals. |
 
-Each axiom produces derived implications — currently 68+ across all tiers. An implication is a specific, enforceable constraint derived from the general axiom. The axiom `executive_function` says the system should reduce cognitive load; the implication `ex-err-001` says error messages must include a concrete next action — a command to run, a file to check, a service to restart. Implications are enforced at three tiers:
+Each axiom produces derived implications — currently 74 across all tiers. An implication is a specific, enforceable constraint derived from the general axiom. The axiom `executive_function` says the system should reduce cognitive load; the implication `ex-err-001` says error messages must include a concrete next action — a command to run, a file to check, a service to restart. Implications are enforced at three tiers:
 
 - **T0 (Block):** Code matching this pattern must not exist in the repository. Commit hooks prevent it from landing.
 - **T1 (Review):** Significant constraint. Requires operator awareness before proceeding.
@@ -125,7 +125,7 @@ The 1st Workshop on Operating Systems Design for AI Agents (AgenticOS, co-locate
 | [`agent-architecture.md`](agent-architecture.md) | Three-tier agent system design |
 | [`operations-manual.md`](operations-manual.md) | Operational reference for running implementations |
 | [`axioms/registry.yaml`](axioms/registry.yaml) | Axiom definitions (weights, scopes, types) |
-| [`axioms/implications/`](axioms/implications/) | Derived implications per axiom (68+ total) |
+| [`axioms/implications/`](axioms/implications/) | Derived implications per axiom (74 total) |
 | [`axioms/precedents/`](axioms/precedents/) | Precedent seeds for common-law interpretation |
 | [`knowledge/`](knowledge/) | Sufficiency models (management, music, personal, technical) |
 | [`domains/`](domains/) | Domain-specific extensions and life-domain registry |
