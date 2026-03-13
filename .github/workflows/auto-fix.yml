@@ -158,7 +158,7 @@ jobs:
 
       - name: Upload CI failure log
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ci-failure-log-${{ github.event.workflow_run.head_branch }}
           path: /tmp/ci-failure.log
