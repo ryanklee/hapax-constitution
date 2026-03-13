@@ -30,6 +30,7 @@ from sdlc.github import (
     fetch_pr_diff,
     post_pr_comment,
 )
+from sdlc.trace_export import TraceContext, is_file_export
 
 # ---------------------------------------------------------------------------
 # Structured output
@@ -167,7 +168,11 @@ def run_review(pr_number: int, *, dry_run: bool = False) -> ReviewResult:
 
     model = os.environ.get("SDLC_REVIEW_MODEL", "claude-sonnet-4-6")
     t0 = time.monotonic()
-    result = _call_llm(system_prompt, user_prompt)
+    with TraceContext("review", f"review-{pr_number}", model=model) as span:
+        result = _call_llm(system_prompt, user_prompt)
+        span.model = model
+        span.input_text = user_prompt[:500]
+        span.output_text = result.model_dump_json()
     duration_ms = int((time.monotonic() - t0) * 1000)
 
     _post_review_results(pr_number, result)
