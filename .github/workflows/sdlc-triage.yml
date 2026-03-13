@@ -77,6 +77,15 @@ jobs:
           - **Complexity:** ${{ steps.triage.outputs.complexity }}
           - **Status:** Triaged, queued for planning."
 
+      - name: Dispatch to implementation
+        if: steps.triage.outputs.reject == '' && steps.triage.outputs.complexity != 'L'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh api repos/${{ github.repository }}/dispatches \
+            -X POST -f event_type=sdlc-plan \
+            -f 'client_payload[issue_number]=${{ github.event.issue.number }}'
+
       - name: Handle error
         if: failure()
         env:
