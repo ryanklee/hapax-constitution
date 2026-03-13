@@ -9,7 +9,7 @@
 Hapax is a three-tier autonomous agent system running on a single workstation with an NVIDIA RTX 3090. It provides:
 
 - **Externalized executive function** — automated routines, proactive nudges, and contextual briefings compensate for ADHD/autism-related challenges with task initiation and sustained attention
-- **LLM-augmented development** — Claude Code as primary interface, 23 specialized agents, RAG-backed knowledge retrieval
+- **LLM-augmented development** — Claude Code as primary interface, 26+ specialized agents, RAG-backed knowledge retrieval
 - **Music production infrastructure** — MIDI routing, sample management, hardware integration for a DAWless studio
 - **Management support** — 1:1 prep, team snapshots, coaching signal tracking (aggregation only, never generates feedback language)
 
@@ -235,7 +235,7 @@ The system is governed by 4 axioms:
 | `management_safety` | 95 | LLMs prepare, humans deliver — never generate feedback language |
 | `corporate_boundary` | dormant | Obsidian plugin cross-network boundary (retained for reference) |
 
-These aren't aspirational — they're enforced. The axiom enforcement infrastructure (defined in `<hapax-system>/hooks/`) includes SessionStart hooks that verify axiom count, PreToolUse pattern scanners that block violations, and PostToolUse audit loggers. 16 T0 implications block code that violates existential constraints. 15 sufficiency probes verify agent compliance.
+These aren't aspirational — they're enforced. The axiom enforcement infrastructure (defined in `<hapax-system>/hooks/`) includes SessionStart hooks that verify axiom count, PreToolUse pattern scanners that block violations, and PostToolUse audit loggers. 18 T0 implications block code that violates existential constraints. 24 sufficiency probes verify agent compliance.
 
 Check compliance: `/axiom-check` in Claude Code. Review pending precedents: `/axiom-review`.
 

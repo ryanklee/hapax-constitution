@@ -539,7 +539,7 @@ This architectural pattern has been implemented in two published systems:
 
 ### hapax-council (Personal LLM Operating Environment)
 
-A personal LLM-augmented operating environment. The full stack: 16 Docker services, 25+ agents spanning RAG sync, voice interaction, audio processing, profile management, and infrastructure self-regulation. Extends the pattern with voice modality (wake word detection, speaker ID, screen awareness), continuous audio processing, and Google Workspace sync pipelines.
+A personal LLM-augmented operating environment. The full stack: 16 Docker services, 26+ agents spanning RAG sync, voice interaction, audio processing, profile management, and infrastructure self-regulation. Extends the pattern with voice modality (wake word detection, speaker ID, screen awareness), continuous audio processing, and Google Workspace sync pipelines.
 
 The system is specifically designed around ADHD/autism and executive function support — the `executive_function` axiom governs accommodation patterns, proactive nudges, and cognitive load management throughout the agent architecture.
 
