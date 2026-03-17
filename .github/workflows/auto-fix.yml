@@ -1,3 +1,23 @@
+# Auto-Fix CI Failures
+#
+# Triggers when the CI workflow fails on a PR branch. Downloads the failure
+# logs, hands them to Claude Code, and pushes a fix commit if possible.
+#
+# Safety:
+#   - Never runs on main (direct pushes)
+#   - Skips if the failing commit was itself an [auto-fix] (loop prevention)
+#   - Circuit breaker: max 3 attempts per branch (git log grep)
+#   - Labels PR "needs-human" when it gives up
+#   - Concurrency group prevents racing with itself
+#
+# Portability:
+#   - Works in any repo whose CI workflow is named "CI"
+#   - Agent reads CLAUDE.md and failure logs to figure out the tech stack
+#   - Protected paths are repo-specific (configure below)
+#
+# Required secrets: ANTHROPIC_API_KEY
+# Optional vars: NTFY_TOPIC (push notification on outcome)
+
 name: Auto-Fix CI Failures
 
 on:
@@ -16,169 +36,230 @@ concurrency:
 
 jobs:
   auto-fix:
+    # Gate: CI failed, not on main, not an auto-fix commit (immediate loop check)
     if: >-
       github.event.workflow_run.conclusion == 'failure' &&
       github.event.workflow_run.head_branch != 'main' &&
       !contains(github.event.workflow_run.head_commit.message, '[auto-fix]')
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
+      - name: Resolve PR
+        id: pr
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          BRANCH="${{ github.event.workflow_run.head_branch }}"
+          PR_NUMBER=$(gh pr list --repo "${{ github.repository }}" --head "$BRANCH" --json number --jq '.[0].number' 2>/dev/null || true)
+          if [ -z "$PR_NUMBER" ] || [ "$PR_NUMBER" = "null" ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "No open PR for branch $BRANCH — skipping"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+            echo "number=$PR_NUMBER" >> "$GITHUB_OUTPUT"
+            echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
+            echo "Resolved PR #$PR_NUMBER on branch $BRANCH"
+          fi
+
       - uses: actions/checkout@v6
+        if: steps.pr.outputs.skip != 'true'
         with:
-          ref: ${{ github.event.workflow_run.head_branch }}
+          ref: ${{ steps.pr.outputs.branch }}
           fetch-depth: 20
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Record start time
-        id: start
-        run: echo "time=$(date +%s)" >> "$GITHUB_OUTPUT"
-
-      - uses: actions/setup-python@v6
-        with:
-          python-version: "3.12"
-
-      - name: Check auto-fix attempt count (circuit breaker)
+      # Circuit breaker: max 3 auto-fix commits on this branch
+      - name: Circuit breaker
+        if: steps.pr.outputs.skip != 'true'
         id: guard
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # E-4: Use circuit_breaker.py instead of git log grep
-          BRANCH="${{ github.event.workflow_run.head_branch }}"
-          CHECK_NAME="auto-fix:${BRANCH}"
-          RESULT=$(python -c "
-          import sys; sys.path.insert(0, '.')
-          from sdlc.circuit_breaker import CircuitBreaker
-          cb = CircuitBreaker(max_attempts=3, window_seconds=86400)
-          if cb.is_tripped('${CHECK_NAME}'):
-              print('tripped')
-          else:
-              remaining = cb.remaining_attempts('${CHECK_NAME}')
-              cb.record_attempt('${CHECK_NAME}')
-              print(f'ok:{remaining}')
-          ")
-          if [[ "$RESULT" == "tripped" ]]; then
-            echo "::warning::Auto-fix circuit breaker tripped for ${BRANCH}. Labeling for human review."
-            echo "should_fix=false" >> "$GITHUB_OUTPUT"
-            echo "auto_fix_count=3" >> "$GITHUB_OUTPUT"
+          COUNT=$(git log --oneline --grep='\[auto-fix\]' origin/main..HEAD 2>/dev/null | wc -l)
+          echo "count=$COUNT" >> "$GITHUB_OUTPUT"
+          if [ "$COUNT" -ge 3 ]; then
+            echo "::warning::Auto-fix limit reached ($COUNT/3). Escalating to human."
+            echo "tripped=true" >> "$GITHUB_OUTPUT"
+            gh pr edit "${{ steps.pr.outputs.number }}" --add-label "needs-human" \
+              --repo "${{ github.repository }}" || true
           else
-            REMAINING="${RESULT#ok:}"
-            COUNT=$((3 - REMAINING))
-            echo "should_fix=true" >> "$GITHUB_OUTPUT"
-            echo "auto_fix_count=$COUNT" >> "$GITHUB_OUTPUT"
+            echo "tripped=false" >> "$GITHUB_OUTPUT"
+            echo "Attempt $((COUNT + 1))/3"
           fi
 
-      - name: Label PR for human review
-        if: steps.guard.outputs.should_fix == 'false'
+      # Download the failed CI run's logs
+      - name: Download failure logs
+        if: steps.pr.outputs.skip != 'true' && steps.guard.outputs.tripped != 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          PR_NUMBER=$(gh pr list --head "${{ github.event.workflow_run.head_branch }}" --json number --jq '.[0].number')
-          if [ -n "$PR_NUMBER" ]; then
-            gh pr edit "$PR_NUMBER" --add-label "needs-human"
+          gh run view "${{ github.event.workflow_run.id }}" \
+            --repo "${{ github.repository }}" \
+            --log-failed > /tmp/ci-failure.log 2>&1 || true
+
+          LINES=$(wc -l < /tmp/ci-failure.log)
+          echo "Log captured: $LINES lines"
+          if [ "$LINES" -eq 0 ]; then
+            echo "::warning::Empty failure log — gh run view may have failed"
           fi
 
-      - name: Download CI logs
-        if: steps.guard.outputs.should_fix == 'true'
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh run view ${{ github.event.workflow_run.id }} --log-failed > /tmp/ci-failure.log 2>&1 || true
-
-      - name: Check failure scope
-        if: steps.guard.outputs.should_fix == 'true'
-        id: scope
+      # Classify for commit message and summary (not for gating — Claude reads the log)
+      - name: Classify failures
+        if: steps.pr.outputs.skip != 'true' && steps.guard.outputs.tripped != 'true'
+        id: classify
         run: |
           LOG="/tmp/ci-failure.log"
-          FIXABLE=false
-          if grep -qE '(yamllint|ruff)' "$LOG" 2>/dev/null; then
-            FIXABLE=true
-          fi
-          echo "fixable=$FIXABLE" >> "$GITHUB_OUTPUT"
+          CATS=""
+          grep -qE '(ruff check|ruff format)'              "$LOG" 2>/dev/null && CATS="${CATS}lint,"
+          grep -qE 'pyright'                                "$LOG" 2>/dev/null && CATS="${CATS}typecheck,"
+          grep -qE '(FAILED tests/|pytest.*failed|assert)'  "$LOG" 2>/dev/null && CATS="${CATS}test,"
+          grep -qE '(pnpm build|tsc.*error|TS[0-9])'       "$LOG" 2>/dev/null && CATS="${CATS}web-build,"
+          grep -qE '(yamllint|yaml.*error)'                 "$LOG" 2>/dev/null && CATS="${CATS}yaml-lint,"
 
-      - name: Label unfixable PR
-        if: steps.guard.outputs.should_fix == 'true' && steps.scope.outputs.fixable == 'false'
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          PR_NUMBER=$(gh pr list --head "${{ github.event.workflow_run.head_branch }}" --json number --jq '.[0].number')
-          if [ -n "$PR_NUMBER" ]; then
-            gh pr edit "$PR_NUMBER" --add-label "needs-human"
-          fi
+          CATS="${CATS%,}"  # trim trailing comma
+          echo "categories=${CATS:-unknown}" >> "$GITHUB_OUTPUT"
+          echo "Failure categories: ${CATS:-unknown}"
 
-      - name: Run Claude Code auto-fix
-        if: steps.guard.outputs.should_fix == 'true' && steps.scope.outputs.fixable == 'true'
-        uses: anthropics/claude-code-action@beta
+      # Install toolchains based on what the repo needs
+      - uses: astral-sh/setup-uv@v7
+        if: steps.pr.outputs.skip != 'true' && steps.guard.outputs.tripped != 'true'
+
+      - name: Install Python deps
+        if: steps.pr.outputs.skip != 'true' && steps.guard.outputs.tripped != 'true'
+        run: uv sync --extra ci 2>/dev/null || uv sync 2>/dev/null || echo "No uv project — skipping"
+
+      - uses: pnpm/action-setup@v4
+        if: >-
+          steps.pr.outputs.skip != 'true' && steps.guard.outputs.tripped != 'true' &&
+          contains(steps.classify.outputs.categories, 'web-build')
         with:
-          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          claude_args: "--model claude-sonnet-4-6 --max-turns 3 --allowedTools Bash,Read,Edit,Write"
-          prompt: |
-            The YAML lint check failed. Fix ONLY yamllint errors in axioms/, domains/, knowledge/.
-            Run `yamllint -d relaxed axioms/ domains/ knowledge/` to identify issues.
-            Do NOT modify axiom definitions in axioms/registry.yaml.
-            Make minimal changes.
+          version: 9
 
-      - name: Commit auto-fix
-        if: steps.guard.outputs.should_fix == 'true' && steps.scope.outputs.fixable == 'true'
+      - uses: actions/setup-node@v6
+        if: >-
+          steps.pr.outputs.skip != 'true' && steps.guard.outputs.tripped != 'true' &&
+          contains(steps.classify.outputs.categories, 'web-build')
+        with:
+          node-version: 22
+
+      - name: Install Node deps
+        if: >-
+          steps.pr.outputs.skip != 'true' && steps.guard.outputs.tripped != 'true' &&
+          contains(steps.classify.outputs.categories, 'web-build')
+        run: |
+          # Find and install in whatever frontend dir exists
+          for dir in council-web web frontend; do
+            if [ -f "$dir/pnpm-lock.yaml" ]; then
+              cd "$dir" && pnpm install --frozen-lockfile && cd ..
+            elif [ -f "$dir/package-lock.json" ]; then
+              cd "$dir" && npm ci && cd ..
+            fi
+          done
+
+      # The actual fix — Claude reads the log file and the codebase
+      - name: Run Claude Code
+        if: steps.pr.outputs.skip != 'true' && steps.guard.outputs.tripped != 'true'
+        uses: anthropics/claude-code-action@5d0cc745cd0cce4c0e9e0b3511de26c3bc285eb5
+        with:
+          model: claude-sonnet-4-6
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          max_turns: 12
+          allowed_tools: "Bash,Read,Edit,Write"
+          direct_prompt: |
+            CI failed on this PR branch. Your job: fix the failures and verify the fix.
+
+            ## Step 1: Read the failure log
+            Read the file /tmp/ci-failure.log — it contains the full output of the
+            failed CI jobs. Understand exactly what failed and why.
+
+            ## Step 2: Read project conventions
+            Read CLAUDE.md in the repo root (if it exists) for project conventions,
+            tooling, and any special instructions.
+
+            ## Step 3: Fix
+            Based on the failure log:
+            - **Lint/format errors**: Run the project's lint fixer (e.g. `uv run ruff check --fix . && uv run ruff format .`)
+            - **Type errors**: Run the type checker, fix type annotations in source code
+            - **Test failures**: Read the failing test AND the source code it tests.
+              Fix the source if it has a bug, or update the test if it has stale
+              assertions. NEVER delete tests, skip tests, or weaken assertions to
+              make broken code pass.
+            - **Build errors**: Run the build command, fix compilation/bundling errors
+
+            ## Step 4: Verify
+            Re-run the same checks that failed to confirm the fix:
+            - If lint failed: `uv run ruff check . && uv run ruff format --check .`
+            - If typecheck failed: `uv run pyright`
+            - If tests failed: `uv run pytest tests/ -x -q`
+            - If web-build failed: find the frontend dir and run its build command
+
+            ## Rules
+            - Make MINIMAL changes — fix only what's broken
+            - Do NOT modify files in: axioms/, hooks/, systemd/
+            - Do NOT modify: shared/config.py, shared/axiom_enforcement.py, shared/alert_state.py
+            - If you cannot fix a failure, say so clearly — do not make speculative changes
+
+      # Commit and push the fix
+      - name: Commit
+        if: steps.pr.outputs.skip != 'true' && steps.guard.outputs.tripped != 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git config user.name "claude-code[bot]"
           git config user.email "claude-code[bot]@users.noreply.github.com"
+
           if git diff --quiet && git diff --cached --quiet; then
-            echo "No changes to commit — Claude could not fix the issue."
-            PR_NUMBER=$(gh pr list --head "${{ github.event.workflow_run.head_branch }}" --json number --jq '.[0].number')
-            if [ -n "$PR_NUMBER" ]; then
-              gh pr edit "$PR_NUMBER" --add-label "needs-human"
-            fi
+            echo "::warning::No changes — Claude could not fix the failures"
+            gh pr edit "${{ steps.pr.outputs.number }}" --add-label "needs-human" \
+              --repo "${{ github.repository }}" || true
+            gh pr comment "${{ steps.pr.outputs.number }}" \
+              --repo "${{ github.repository }}" \
+              --body "Auto-fix could not resolve CI failures (${{ steps.classify.outputs.categories }}). Human attention needed." || true
           else
             git add -A
-            git commit -m "[auto-fix] resolve yamllint errors
+            git commit -m "[auto-fix] ${{ steps.classify.outputs.categories }}
 
-          Automated fix by Claude Code. See CI logs for details.
+            Automated fix by Claude Code (attempt ${{ steps.guard.outputs.count && fromJSON(steps.guard.outputs.count) + 1 || 1 }}/3).
 
-          Co-Authored-By: Claude Sonnet <noreply@anthropic.com>"
+            Co-Authored-By: Claude Sonnet <noreply@anthropic.com>"
             git push
           fi
 
-      - name: Write job summary
-        if: always()
+      # Observability
+      - name: Job summary
+        if: always() && steps.pr.outputs.skip != 'true'
         run: |
-          DURATION=$(( $(date +%s) - ${{ steps.start.outputs.time }} ))
           cat >> "$GITHUB_STEP_SUMMARY" <<EOF
-          ## Auto-Fix Summary
+          ## Auto-Fix CI Failures
 
           | Field | Value |
           |-------|-------|
-          | Branch | ${{ github.event.workflow_run.head_branch }} |
-          | Triggering run | ${{ github.event.workflow_run.id }} |
-          | Attempt | ${{ steps.guard.outputs.auto_fix_count }} / 3 |
-          | Fixable | ${{ steps.scope.outputs.fixable || 'skipped' }} |
+          | PR | #${{ steps.pr.outputs.number }} |
+          | Branch | \`${{ steps.pr.outputs.branch }}\` |
+          | Triggering run | [${{ github.event.workflow_run.id }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.event.workflow_run.id }}) |
+          | Attempt | ${{ steps.guard.outputs.count || '?' }}/3 |
+          | Categories | ${{ steps.classify.outputs.categories || 'n/a' }} |
           | Outcome | ${{ job.status }} |
-          | Duration | ${DURATION}s |
           EOF
 
-      - name: Upload CI failure log
-        if: always()
+      - name: Upload failure log
+        if: always() && steps.pr.outputs.skip != 'true'
         uses: actions/upload-artifact@v7
         with:
-          name: ci-failure-log-${{ github.event.workflow_run.head_branch }}
+          name: ci-failure-log-${{ steps.pr.outputs.branch }}
           path: /tmp/ci-failure.log
           if-no-files-found: ignore
 
-      - name: Notify via ntfy
-        if: always() && vars.NTFY_TOPIC != ''
+      - name: Notify
+        if: always() && steps.pr.outputs.skip != 'true' && vars.NTFY_TOPIC != ''
         run: |
           STATUS="${{ job.status }}"
-          if [ "$STATUS" = "success" ]; then
-            PRIORITY="default"
-            TAGS="white_check_mark,robot"
-          else
-            PRIORITY="high"
-            TAGS="x,robot"
-          fi
+          TAGS=$( [ "$STATUS" = "success" ] && echo "white_check_mark,robot" || echo "x,robot" )
+          PRIO=$( [ "$STATUS" = "success" ] && echo "default" || echo "high" )
           curl -sf \
             -H "Title: Auto-Fix ${STATUS}" \
-            -H "Priority: ${PRIORITY}" \
+            -H "Priority: ${PRIO}" \
             -H "Tags: ${TAGS}" \
             -H "Click: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
-            -d "Branch ${{ github.event.workflow_run.head_branch }} — ${STATUS} (attempt ${{ steps.guard.outputs.auto_fix_count }}/3)" \
+            -d "PR #${{ steps.pr.outputs.number }} (${{ steps.pr.outputs.branch }}) — ${STATUS} (attempt ${{ steps.guard.outputs.count || '?' }}/3, categories: ${{ steps.classify.outputs.categories || 'n/a' }})" \
             "https://ntfy.sh/${{ vars.NTFY_TOPIC }}" || true
