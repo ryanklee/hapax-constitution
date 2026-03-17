@@ -27,11 +27,12 @@ Four axioms govern the current implementations:
 | `corporate_boundary` | 90 | Work data stays in employer systems. Graceful degradation when crossing network boundaries. |
 | `management_governance` | 85 | LLMs prepare context; humans deliver words to other humans. No generated feedback language or coaching recommendations about individuals. |
 
-Each axiom produces derived implications — currently 74 across all tiers. An implication is a specific, enforceable constraint derived from a general axiom. For example, the axiom `executive_function` states that the system should reduce cognitive load; the implication `ex-err-001` states that error messages must include a concrete next action — a command to run, a file to check, a service to restart. Implications are enforced at three tiers:
+Each axiom produces derived implications — currently 90 across all tiers. An implication is a specific, enforceable constraint derived from a general axiom. For example, the axiom `executive_function` states that the system should reduce cognitive load; the implication `ex-err-001` states that error messages must include a concrete next action — a command to run, a file to check, a service to restart. Implications are enforced at four tiers:
 
 - **T0 (Block):** Code matching this pattern must not exist in the repository. Commit hooks prevent it from landing.
 - **T1 (Review):** Significant constraint. Requires operator awareness before proceeding.
 - **T2 (Warn):** Quality preference. Should be followed absent specific reason not to.
+- **T3 (Lint):** Style and convention preferences. Advisory only.
 
 The tier graduation follows the same logic as levels of scrutiny in constitutional law — strict scrutiny for fundamental rights, rational basis for ordinary legislation. Existential violations receive existential enforcement; preferences receive advisory enforcement.
 
@@ -90,9 +91,9 @@ An inotify watcher monitors the filesystem bus. File changes produce enriched ev
 
 Two systems implement this pattern. They share architecture and infrastructure (Qdrant, LiteLLM, Ollama, PostgreSQL) but not code — each owns its full stack. The constitution constrains both; the implementations evolve independently.
 
-**[hapax-council](https://github.com/ryanklee/hapax-council)** — Personal operating environment. 26+ agents across management, knowledge, sync, voice, and system domains. Always-on voice daemon with a multi-cadence perception engine. RAG pipeline ingesting 7 external sources. Reactive cockpit with FastAPI API and React dashboard. Instantiates all four axioms.
+**[hapax-council](https://github.com/ryanklee/hapax-council)** — Personal operating environment. 45+ agents across management, knowledge, sync, voice, perception, studio, governance, and system domains. Always-on voice daemon with a multi-cadence perception engine fusing audio, visual, biometric, and environmental signals through a typed FRP pipeline. Temporal intelligence stack (Husserlian retention/impression/protention, SystemStimmung self-regulation, predictive content scheduling). GPU-accelerated studio compositor with visual effects and visual layer overlays. RAG pipeline ingesting 10 external sources. Reactive cockpit with FastAPI API and React dashboard. Instantiates all five axioms.
 
-**[hapax-officium](https://github.com/ryanklee/hapax-officium)** — Management-domain extraction, designed to be forked by other engineering managers. 16 agents for 1:1 preparation, team health tracking, management profiling, and briefings. Includes a self-demonstrating capability: bootstrap from synthetic seed data, and the system generates a demonstration against live operational state. Originally part of council, extracted when the management agents proved independently usable. Instantiates three axioms (`single_operator`, `decision_support`, `management_safety` — renamed from the canonical IDs to fit the management domain vocabulary).
+**[hapax-officium](https://github.com/ryanklee/hapax-officium)** — Management-domain extraction, designed to be forked by other engineering managers. 17 agents for 1:1 preparation, team health tracking, management profiling, temporal simulation, and briefings. Includes a self-demonstrating capability: bootstrap from synthetic seed data, and the system generates a demonstration against live operational state. Originally part of council, extracted when the management agents proved independently usable. Instantiates three axioms (`single_operator`, `decision_support`, `management_safety` — renamed from the canonical IDs to fit the management domain vocabulary).
 
 ## Relationship to prior work
 
@@ -115,7 +116,7 @@ The 1st Workshop on Operating Systems Design for AI Agents (AgenticOS, co-locate
 | [`agent-architecture.md`](agent-architecture.md) | Three-tier agent system design |
 | [`operations-manual.md`](operations-manual.md) | Operational reference for running implementations |
 | [`axioms/registry.yaml`](axioms/registry.yaml) | Axiom definitions (weights, scopes, types) |
-| [`axioms/implications/`](axioms/implications/) | Derived implications per axiom (74 total) |
+| [`axioms/implications/`](axioms/implications/) | Derived implications per axiom (90 total) |
 | [`axioms/precedents/`](axioms/precedents/) | Precedent seeds for common-law interpretation |
 | [`knowledge/`](knowledge/) | Sufficiency models (management, music, personal, technical) |
 | [`domains/`](domains/) | Domain-specific extensions and life-domain registry |
