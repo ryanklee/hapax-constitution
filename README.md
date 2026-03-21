@@ -124,9 +124,7 @@ The 1st Workshop on Operating Systems Design for AI Agents (AgenticOS, co-locate
 
 ## Part of the Hapax Research Project
 
-This governance specification provides the axiom framework and interpretive canon for a research project **operationalizing Clark & Brennan's (1991) conversational grounding theory in a production voice AI**. The constitutional pattern constrains the voice daemon's behavior and provides the governance substrate through which grounding mechanics are enforced.
-
-See [hapax-council](https://github.com/ryanklee/hapax-council) for the full research context, SCED experiment design, and research compendium.
+This governance specification defines the axiom framework used by a research project implementing Clark & Brennan's (1991) conversational grounding theory in a voice AI system. See [hapax-council](https://github.com/ryanklee/hapax-council) for the research context and SCED experiment design.
 
 | Repository | Role |
 |-----------|------|
