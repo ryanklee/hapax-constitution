@@ -11,6 +11,7 @@ permissions:
 
 concurrency:
   group: sdlc-axiom-gate-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
 
 jobs:
   axiom-gate:
@@ -46,15 +47,10 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          PR_URL="${{ github.event.pull_request.html_url }}"
           PR=${{ github.event.pull_request.number }}
           gh pr edit "$PR" --add-label "sdlc:ready-for-human"
-
-          if gh pr checks "$PR" --watch --fail-level all; then
-            gh pr merge "$PR" --squash --delete-branch
-          else
-            echo "::warning::CI checks failed after axiom gate passed — not auto-merging"
-            gh pr edit "$PR" --add-label "needs-human"
-          fi
+          gh pr merge --auto --squash --delete-branch "$PR_URL"
 
       - name: Mark advisory for human review
         if: steps.gate.outputs.overall == 'advisory'
