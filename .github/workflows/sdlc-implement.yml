@@ -13,7 +13,7 @@ permissions:
 
 concurrency:
   group: sdlc-implement-${{ github.event.client_payload.issue_number || github.event.pull_request.number }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   implement:

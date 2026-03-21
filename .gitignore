@@ -1,4 +1,30 @@
 __pycache__/
+*.pyc
+
+# Secrets
+.env
+.envrc
+
+# Database
+*.db
+*.sqlite
+*.db-wal
+*.db-shm
+
+# Media
+*.wav
+*.mp3
+*.mp4
+*.png
+*.jpg
+*.jpeg
+
+# Profiles (if any generated)
+profiles/**/*.json
+profiles/**/*.md
+profiles/**/*.jsonl
+profiles/**/*.yaml
+
+# Claude Code
 .claude/settings.local.json
 .playwright-mcp/
-*.pyc
