@@ -122,6 +122,24 @@ The 1st Workshop on Operating Systems Design for AI Agents (AgenticOS, co-locate
 | [`domains/`](domains/) | Domain-specific extensions and life-domain registry |
 | [`research/`](research/) | Research foundations (management theory, axiom enforcement, prior art) |
 
+## Part of the Hapax Research Project
+
+This governance specification provides the axiom framework and interpretive canon for a research project **operationalizing Clark & Brennan's (1991) conversational grounding theory in a production voice AI**. The constitutional pattern constrains the voice daemon's behavior and provides the governance substrate through which grounding mechanics are enforced.
+
+See [hapax-council](https://github.com/ryanklee/hapax-council) for the full research context, SCED experiment design, and research compendium.
+
+| Repository | Role |
+|-----------|------|
+| [hapax-council](https://github.com/ryanklee/hapax-council) | Primary research artifact — voice daemon, grounding system, experiment infrastructure |
+| **hapax-constitution** (this repo) | Governance specification — axioms, implications, canons |
+| [hapax-officium](https://github.com/ryanklee/hapax-officium) | Supporting software — management decision support |
+| [hapax-watch](https://github.com/ryanklee/hapax-watch) | Research instrument — Wear OS biometric companion |
+| [cockpit-mcp](https://github.com/ryanklee/cockpit-mcp) | Infrastructure — MCP server for Claude Code |
+
+## Citation
+
+If you use this software in your research, please cite it using the [CITATION.cff](CITATION.cff) file.
+
 ## License
 
 Apache 2.0 — see [LICENSE](LICENSE).
