@@ -74,6 +74,10 @@ The **System Cockpit** is the operational dashboard, built as a **FastAPI API ba
 - `cockpit --once` produces a one-shot CLI snapshot for terminal use or piping
 - The React frontend connects to the FastAPI backend and renders the dashboard in the browser
 
+Beyond the System Cockpit, `logos-api.service` and `officium-api.service` are additional core backend services providing foundational support for Tier 1 operations.
+- `logos-api.service`: TODO: Describe purpose and functionality.
+- `officium-api.service`: TODO: Describe purpose and functionality.
+
 The cockpit consumes data from health-monitor, briefing, scout, activity-analyzer, and profiler agents. Persistent state lives in `<cache>/cockpit/` (probes, decisions, facts).
 
 ### Extended Interactive Surfaces
@@ -110,7 +114,7 @@ These live in `<ai-agents>/`. Claude Code invokes them via shell or imports them
 
 **Trigger:** Git pre-push hook or Claude Code `/review` command.
 **Function:** Reads staged diff, checks against project conventions (from CLAUDE.md or repo-local rules), flags issues by severity, suggests fixes. Uses AST parsing for Python/JS, not just string matching.
-**Model:** claude-sonnet for analysis, qwen-coder-32b for quick syntax checks.
+**Model:** claude-sonnet for analysis, TODO: <Replace with available local model for quick syntax checks, e.g., qwen-coder-32b if pulled>.
 **Output:** Structured review in stdout or as git notes.
 
 ### sample-curator (planned)
