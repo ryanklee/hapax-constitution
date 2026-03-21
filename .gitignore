@@ -26,5 +26,6 @@ profiles/**/*.jsonl
 profiles/**/*.yaml
 
 # Claude Code
+.claude/settings.json
 .claude/settings.local.json
 .playwright-mcp/
