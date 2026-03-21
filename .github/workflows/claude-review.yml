@@ -15,7 +15,10 @@ concurrency:
 
 jobs:
   review:
-    if: github.event.pull_request.draft == false
+    if: >-
+      github.event.pull_request.draft == false &&
+      !contains(github.event.pull_request.head.ref, '[auto-fix]') &&
+      !contains(github.event.head_commit.message || '', '[auto-fix]')
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
