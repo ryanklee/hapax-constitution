@@ -132,7 +132,7 @@ This governance specification defines the axiom framework used by a research pro
 | **hapax-constitution** (this repo) | Governance specification — axioms, implications, canons |
 | [hapax-officium](https://github.com/ryanklee/hapax-officium) | Supporting software — management decision support |
 | [hapax-watch](https://github.com/ryanklee/hapax-watch) | Research instrument — Wear OS biometric companion |
-| [cockpit-mcp](https://github.com/ryanklee/cockpit-mcp) | Infrastructure — MCP server for Claude Code |
+| [hapax-mcp](https://github.com/ryanklee/hapax-mcp) | Infrastructure — MCP server for Claude Code |
 
 ## Citation
 
