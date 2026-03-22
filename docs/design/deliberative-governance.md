@@ -386,7 +386,7 @@ This index supports the Phase 3 evolution queries without requiring YAML parsing
 
 **Semantic queries** (Qdrant): The tension map's `novel_insight` field is embedded and stored in the `documents` collection with metadata `{source_service: "deliberation", content_type: "novel_insight", deliberation_id: "..."}`. This enables semantic search over deliberation insights — "find deliberations where the novel insight relates to authentication scoping" — using the existing `search_documents()` infrastructure.
 
-### Cockpit API endpoints
+### Logos API endpoints
 
 ```
 GET  /api/data/deliberations              # list all, filterable by status/axiom/trigger_type
@@ -567,7 +567,7 @@ review_latency = median(days from deliberation creation to operator ruling)
 abandonment_rate = count(deliberations never ruled on) / count(deliberations)
 ```
 
-If the operator does not engage with deliberation outputs, the process has no governance impact regardless of output quality. High review latency or abandonment signals either: (a) deliberation outputs are not useful enough to warrant review, (b) the surfacing mechanism (briefing, cockpit) is insufficient, or (c) deliberation volume exceeds operator capacity.
+If the operator does not engage with deliberation outputs, the process has no governance impact regardless of output quality. High review latency or abandonment signals either: (a) deliberation outputs are not useful enough to warrant review, (b) the surfacing mechanism (briefing, logos) is insufficient, or (c) deliberation volume exceeds operator capacity.
 
 | Review latency | Interpretation |
 |---------------|---------------|
@@ -618,7 +618,7 @@ No single metric is sufficient. The evaluation standard uses a composite assessm
 ### What observability does not do
 
 - Does not add latency to enforcement. Tracing is fire-and-forget (OTel BatchSpanProcessor). Enforcement remains synchronous and unblocked.
-- Does not require new infrastructure. Uses existing Langfuse (traces), Qdrant (semantic index), health monitor (checks), briefing (consumption), cockpit API (exposure).
+- Does not require new infrastructure. Uses existing Langfuse (traces), Qdrant (semantic index), health monitor (checks), briefing (consumption), logos API (exposure).
 - Does not observe operator reasoning. The operator's ruling is recorded, but the operator's internal reasoning process is not traced. The system observes its own deliberation, not the operator's decision-making.
 
 ## References

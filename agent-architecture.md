@@ -26,9 +26,9 @@ This is the scout agent's purpose. Where the drift detector asks "does documenta
 │          MCP servers · slash commands · hooks         │
 │                  Full stack access                    │
 │                                                      │
-│          System Cockpit (web dashboard)               │
+│          Hapax Logos (web dashboard)                   │
 │       FastAPI backend + React SPA frontend            │
-│     `uv run cockpit` · `cockpit --once` (CLI)        │
+│              `uv run logos-api`                       │
 ├──────────────────────────────────────────────────────┤
 │                  TIER 2: ON-DEMAND                    │
 │            Pydantic AI agents invoked by              │
@@ -64,25 +64,24 @@ This is the scout agent's purpose. Where the drift detector asks "does documenta
     └─────────┘   └─────────────┘  └───────────┘
 ```
 
-## Tier 1: Interactive (Claude Code + System Cockpit + Extended Surfaces)
+## Tier 1: Interactive (Claude Code + Logos Dashboard + Extended Surfaces)
 
 Claude Code is the primary interactive interface — full MCP access, slash commands, hooks, and direct agent invocation.
 
-The **System Cockpit** is the operational dashboard, built as a **FastAPI API backend + React SPA frontend** (`cockpit-web`). It provides real-time health monitoring, agent status, nudge management, goal tracking, profile visibility, and briefing display.
+**Hapax Logos** is the operational dashboard, built as a **FastAPI API backend + React SPA frontend**. It provides real-time health monitoring, agent status, nudge management, goal tracking, profile visibility, and briefing display.
 
-- `uv run cockpit` launches the API server (default port 8095)
-- `cockpit --once` produces a one-shot CLI snapshot for terminal use or piping
+- `uv run logos-api` launches the API server (default port 8051)
 - The React frontend connects to the FastAPI backend and renders the dashboard in the browser
 
-Beyond the System Cockpit, `logos-api.service` and `officium-api.service` are additional core backend services providing foundational support for Tier 1 operations.
-- `logos-api.service`: TODO: Describe purpose and functionality.
-- `officium-api.service`: TODO: Describe purpose and functionality.
+Council and officium each run their own Logos API instance:
+- `logos-api.service` (council, port 8051)
+- `officium-api.service` (officium, port 8050)
 
-The cockpit consumes data from health-monitor, briefing, scout, activity-analyzer, and profiler agents. Persistent state lives in `<cache>/cockpit/` (probes, decisions, facts).
+The logos dashboard consumes data from health-monitor, briefing, scout, activity-analyzer, and profiler agents. Persistent state lives in `<cache>/logos/` (probes, decisions, facts).
 
 ### Extended Interactive Surfaces
 
-Beyond Claude Code and the Cockpit, Tier 1 includes additional LLM-enabled surfaces that route through LiteLLM for model access and Langfuse tracing. These are not agents — they are interaction points that make LLM availability ambient across the workstation.
+Beyond Claude Code and the Logos Dashboard, Tier 1 includes additional LLM-enabled surfaces that route through LiteLLM for model access and Langfuse tracing. These are not agents — they are interaction points that make LLM availability ambient across the workstation.
 
 | Surface | Tools | Purpose |
 |---------|-------|---------|
@@ -148,12 +147,12 @@ These live in `<ai-agents>/`. Claude Code invokes them via shell or imports them
 ### management-prep
 
 **Trigger:** Manual CLI or Claude Code invocation before 1:1s or weekly reviews.
-**Function:** Reads vault management data (people notes, coaching hypotheses, feedback records, meeting history) via `cockpit/data/management.py`, synthesizes context with one LLM call, writes preparation material to vault. Three modes: `--person "Name"` (1:1 prep), `--team-snapshot` (team state overview), `--overview` (condensed management summary).
+**Function:** Reads vault management data (people notes, coaching hypotheses, feedback records, meeting history) via `logos/data/management.py`, synthesizes context with one LLM call, writes preparation material to vault. Three modes: `--person "Name"` (1:1 prep), `--team-snapshot` (team state overview), `--overview` (condensed management summary).
 
 **Boundary:** "LLM Prepares, Human Delivers." System prompt explicitly forbids drafting feedback language, generating coaching hypotheses, or suggesting what the operator should say. Focus is signal aggregation and context synthesis only.
 
 **Model:** claude-sonnet (balanced) for prep/snapshot, claude-haiku (fast) for overview.
-**Data sources:** Vault people notes, meeting notes, coaching hypotheses, feedback records (all via `shared/management_bridge.py` and `cockpit/data/management.py`).
+**Data sources:** Vault people notes, meeting notes, coaching hypotheses, feedback records (all via `shared/management_bridge.py` and `logos/data/management.py`).
 **Output:** Markdown written to vault (`10-work/1on1-prep/`, `10-work/{date}-team-snapshot.md`, `30-system/management-overview.md`). Also stdout/JSON.
 
 ### meeting-lifecycle
@@ -323,7 +322,7 @@ Obsidian serves as the primary operational surface during work hours. Two vaults
 
 1. **Agent-to-agent communication:** No — flat orchestration. Claude Code orchestrates, agents never invoke each other. This avoids cascading failures and keeps the call graph auditable.
 
-2. **State management:** Agents are stateless per-invocation. All persistent state lives in Qdrant, filesystem (`profiles/`), or cache (`<cache>/cockpit/`). This works well for the current 15-agent roster.
+2. **State management:** Agents are stateless per-invocation. All persistent state lives in Qdrant, filesystem (`profiles/`), or cache (`<cache>/logos/`). This works well for the current 15-agent roster.
 
 3. **Cost controls:** LiteLLM fallback chains provide implicit cost control (expensive model fails → cheaper model). Langfuse traces all calls for cost visibility. High-frequency Tier 3 tasks (health-monitor, knowledge-maint) use zero LLM by default.
 

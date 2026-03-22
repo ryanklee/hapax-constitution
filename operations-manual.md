@@ -50,14 +50,14 @@ The briefing synthesizes: LLM call volume and cost, error rates by model, health
 
 The briefing is your daily operational summary. Read it. Act on any high-priority items it flags.
 
-### 3. Launch the Cockpit
+### 3. Launch Logos
 
-The cockpit is a web application: a FastAPI backend serves data on port 8051 and a React SPA frontend provides the interactive dashboard. In production, the API runs as a Docker container (`hapax-agents`).
+Logos is a web application: a FastAPI backend serves data on port 8051 and a React SPA frontend provides the interactive dashboard. In production, the API runs as a Docker container (`hapax-agents`).
 
 **Start the API server** (if not running as Docker container):
 
 ```bash
-cd <ai-agents> && eval "$(<.envrc)" && uv run cockpit
+cd <ai-agents> && eval "$(<.envrc)" && uv run logos-api
 ```
 
 This launches the FastAPI API server. The Docker container maps it to http://localhost:8051.
@@ -65,7 +65,7 @@ This launches the FastAPI API server. The Docker container maps it to http://loc
 **Start the web frontend** (in a separate terminal):
 
 ```bash
-cd <cockpit-web> && pnpm dev
+cd <logos-web> && pnpm dev
 ```
 
 Open http://localhost:5173. The web dashboard shows health status, Docker containers, systemd timers, GPU/VRAM, nudges, cost tracking, domain health, briefings, and scout reports. In production, the built SPA can be served directly from the API server.
@@ -73,8 +73,8 @@ Open http://localhost:5173. The web dashboard shows health status, Docker contai
 **CLI snapshots** (no web UI needed):
 
 ```bash
-uv run cockpit --once                # Plain text snapshot to stdout
-uv run cockpit --color               # Rich formatted CLI snapshot
+uv run logos-api --once                # Plain text snapshot to stdout
+uv run logos-api --color               # Rich formatted CLI snapshot
 ```
 
 These print a point-in-time system overview to the terminal and exit — useful for scripting or quick checks without launching the full web UI.
@@ -136,12 +136,12 @@ Claude Code also has access to the operator profile (13 dimensions in Qdrant), a
 
 - [ ] Verify `health-monitor` returns all checks HEALTHY
 - [ ] Read the morning briefing (or generate one)
-- [ ] Launch the cockpit (`uv run cockpit` + web frontend), familiarize with the dashboard
+- [ ] Launch logos (`uv run logos-api` + web frontend), familiarize with the dashboard
 - [ ] Open Obsidian, verify sync is working
 - [ ] Open Claude Code, run `/status` to confirm it sees the stack
 - [ ] Check systemd timers are enabled: `systemctl --user list-timers`
 - [ ] Browse `30-system/` in Obsidian — see what the system has written recently
-- [ ] Browse existing nudges in the cockpit — what does the system think needs attention?
+- [ ] Browse existing nudges in logos — what does the system think needs attention?
 
 ---
 
@@ -162,7 +162,7 @@ The system has a built-in daily sequence that runs automatically:
 | Every 12h | Profiler agent incrementally updates operator profile |
 | Always on | RAG ingestion watchdog, audio recorder, voice daemon, BT keepalive |
 
-Your morning routine: read the briefing (arrives as ntfy push notification, also in `30-system/`), check any nudges in the cockpit, act on flagged items.
+Your morning routine: read the briefing (arrives as ntfy push notification, also in `30-system/`), check any nudges in logos, act on flagged items.
 
 ### Agent Workflows to Practice
 
@@ -175,7 +175,7 @@ This queries Qdrant for relevant document chunks and synthesizes an answer.
 
 **Code review** — when you want a second opinion on a file:
 ```bash
-uv run python -m agents.code_review <ai-agents>/cockpit/app.py
+uv run python -m agents.code_review <ai-agents>/logos/api/app.py
 ```
 
 **Management prep** — before 1:1s:
@@ -466,10 +466,10 @@ uv run python -m agents.health_monitor --history  # Trend
 uv run python -m agents.briefing --hours 24 --save
 
 # Cockpit
-uv run cockpit                                     # API server (port 8051 via Docker)
-uv run cockpit --once                              # Plain text CLI snapshot
-uv run cockpit --color                             # Rich CLI snapshot
-cd <cockpit-web> && pnpm dev              # Web frontend (port 5173)
+uv run logos-api                                     # API server (port 8051 via Docker)
+uv run logos-api --once                              # Plain text CLI snapshot
+uv run logos-api --color                             # Rich CLI snapshot
+cd <logos-web> && pnpm dev              # Web frontend (port 5173)
 
 # Docker
 cd ~/llm-stack

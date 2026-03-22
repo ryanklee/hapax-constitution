@@ -547,7 +547,7 @@ Repository: [https://github.com/ryanklee/hapax-council](https://github.com/ryank
 
 ### hapax-officium (Management Decision Support)
 
-A management cockpit for engineering managers. Agents prepare context for 1:1s, track management practice patterns, surface stale conversations and open loops, and profile the operator's management self-awareness. Includes a React dashboard, 16 agents, a reactive engine with 12 rules, and a demo seed system that produces fully-hydrated replicas with synthetic data.
+A decision-support system for engineering managers. Agents prepare context for 1:1s, track management practice patterns, surface stale conversations and open loops, and profile the operator's management self-awareness. Includes a React dashboard, 16 agents, a reactive engine with 12 rules, and a demo seed system that produces fully-hydrated replicas with synthetic data.
 
 Safety principle: "LLMs prepare, humans deliver." The system never generates feedback language, coaching recommendations, or evaluations of individual team members. This boundary is enforced as a constitutional axiom (`management_safety`, weight 95) with T0 blocking implications.
 

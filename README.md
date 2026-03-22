@@ -77,7 +77,7 @@ At single-operator scale with sequential or low-concurrency agent execution, the
 
 ### Three-tier agent architecture
 
-- **Tier 1 (Interactive):** Claude Code with MCP tools, system cockpit, web dashboard. Full operator supervision.
+- **Tier 1 (Interactive):** Claude Code with MCP tools, logos dashboard, web dashboard. Full operator supervision.
 - **Tier 2 (On-demand):** Pydantic AI agents invoked by CLI, API, or Tier 1. Stateless per-invocation; all persistent state lives on the filesystem or in vector storage.
 - **Tier 3 (Autonomous):** systemd timers running Tier 2 agents on schedules. High-frequency agents (health monitoring, knowledge maintenance) are deterministic — zero LLM calls.
 
@@ -91,7 +91,7 @@ An inotify watcher monitors the filesystem bus. File changes produce enriched ev
 
 Two systems implement this pattern. They share architecture and infrastructure (Qdrant, LiteLLM, Ollama, PostgreSQL) but not code — each owns its full stack. The constitution constrains both; the implementations evolve independently.
 
-**[hapax-council](https://github.com/ryanklee/hapax-council)** — Personal operating environment. 45+ agents across management, knowledge, sync, voice, perception, studio, governance, and system domains. Always-on voice daemon with a multi-cadence perception engine fusing audio, visual, biometric, and environmental signals through a typed FRP pipeline. Temporal intelligence stack (Husserlian retention/impression/protention, SystemStimmung self-regulation, predictive content scheduling). GPU-accelerated studio compositor with visual effects and visual layer overlays. RAG pipeline ingesting 10 external sources. Reactive cockpit with FastAPI API and React dashboard. Instantiates all five axioms.
+**[hapax-council](https://github.com/ryanklee/hapax-council)** — Personal operating environment. 45+ agents across management, knowledge, sync, voice, perception, studio, governance, and system domains. Always-on voice daemon with a multi-cadence perception engine fusing audio, visual, biometric, and environmental signals through a typed FRP pipeline. Temporal intelligence stack (Husserlian retention/impression/protention, SystemStimmung self-regulation, predictive content scheduling). GPU-accelerated studio compositor with visual effects and visual layer overlays. RAG pipeline ingesting 10 external sources. Logos API with React dashboard. Instantiates all five axioms.
 
 **[hapax-officium](https://github.com/ryanklee/hapax-officium)** — Management-domain extraction, designed to be forked by other engineering managers. 17 agents for 1:1 preparation, team health tracking, management profiling, temporal simulation, and briefings. Includes a self-demonstrating capability: bootstrap from synthetic seed data, and the system generates a demonstration against live operational state. Originally part of council, extracted when the management agents proved independently usable. Instantiates three axioms (`single_operator`, `decision_support`, `management_safety` — renamed from the canonical IDs to fit the management domain vocabulary).
 
