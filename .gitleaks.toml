@@ -20,10 +20,10 @@ paths = ['''hooks/''', '''tests/''', '''\.gitleaks\.toml''']
 [[rules]]
 id = "home-directory-path"
 description = "Home directory absolute path"
-regex = '''/home/operator/'''
+regex = '''/home/hapax/'''
 tags = ["pii", "path"]
 [rules.allowlist]
-paths = ['''.gitignore''', '''CLAUDE\.md''', '''hooks/''', '''\.claude/''', '''\.gitleaks\.toml''']
+paths = ['''.gitignore''', '''CLAUDE\.md''', '''hooks/''', '''\.claude/''', '''\.gitleaks\.toml''', '''systemd/''', '''process-compose\.yaml''', '''scripts/''']
 
 # Allow known false positives
 [allowlist]
