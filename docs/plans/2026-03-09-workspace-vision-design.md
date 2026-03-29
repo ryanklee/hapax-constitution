@@ -102,7 +102,7 @@ This design covers the foundational capture primitive, five primary capability a
 
 ### 1. WebcamCapturer
 
-**File:** `agents/hapax_voice/webcam_capturer.py`
+**File:** `agents/hapax_daimonion/webcam_capturer.py`
 
 A role-aware webcam capture primitive, parallel to the existing `ScreenCapturer`.
 
@@ -139,7 +139,7 @@ class CameraConfig:
 
 ### 2. PresenceDetector Upgrade
 
-**File:** `agents/hapax_voice/presence.py` (modify existing)
+**File:** `agents/hapax_daimonion/presence.py` (modify existing)
 
 **Current state:** Silero VAD sliding window. Scores based on speech event count in last 5 minutes. Three levels: `likely_present` (5+), `uncertain` (2-4), `likely_absent` (<2).
 
@@ -173,7 +173,7 @@ class CameraConfig:
 
 ### 3. WorkspaceMonitor (evolved ScreenMonitor)
 
-**File:** `agents/hapax_voice/workspace_monitor.py` (new, replaces screen_monitor.py)
+**File:** `agents/hapax_daimonion/workspace_monitor.py` (new, replaces screen_monitor.py)
 
 The current `ScreenMonitor` composes screen capture + analysis + proactive routing. `WorkspaceMonitor` extends this to compose all visual sources: screen, operator camera, hardware camera.
 
@@ -268,7 +268,7 @@ The C920's primary value is music production gear monitoring. This feeds into mu
 
 ### 5. Document Scanner (Hotkey-Triggered)
 
-**Trigger:** New hotkey command via existing HotkeyServer (`agents/hapax_voice/hotkey.py`). The hotkey socket already supports arbitrary string commands.
+**Trigger:** New hotkey command via existing HotkeyServer (`agents/hapax_daimonion/hotkey.py`). The hotkey socket already supports arbitrary string commands.
 
 **Flow:**
 1. Operator holds document/label/note up to BRIO camera
@@ -304,7 +304,7 @@ A lightweight continuous recording service parallel to `audio-recorder.service`.
 **Implementation:** Single ffmpeg command per camera, or a small Python script that uses WebcamCapturer on a timer.
 
 **Storage:**
-- Path: `<local-share>/hapax-voice/timelapse/`
+- Path: `<local-share>/hapax-daimonion/timelapse/`
 - Naming: `{role}-{YYYYMMDD}-{HHMMSS}.jpg` (e.g., `operator-20260309-140500.jpg`, `hardware-20260309-140500.jpg`)
 - Size: ~80-100KB per frame at 720p JPEG quality 85 → ~144MB/day/camera → ~288MB/day total
 - Retention: 7 days rolling (configurable). Cleanup via systemd timer or the script itself.
@@ -379,7 +379,7 @@ The cockpit-web dashboard gains a new "Workspace" panel showing:
 
 ## Configuration
 
-New fields added to `VoiceConfig` (in `agents/hapax_voice/config.py`):
+New fields added to `VoiceConfig` (in `agents/hapax_daimonion/config.py`):
 
 ```python
 # Webcam settings
@@ -405,7 +405,7 @@ workspace_multi_image: bool = True  # send all frames to Gemini
 timelapse_enabled: bool = False  # opt-in
 timelapse_interval_s: float = 60.0
 timelapse_retention_days: int = 7
-timelapse_path: str = "<local-share>/hapax-voice/timelapse"
+timelapse_path: str = "<local-share>/hapax-daimonion/timelapse"
 ```
 
 ## Dependencies

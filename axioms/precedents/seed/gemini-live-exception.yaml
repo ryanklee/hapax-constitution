@@ -12,7 +12,7 @@ precedent:
   created_at: "2026-03-13"
 
   situation: >
-    The Gemini Live speech-to-speech backend (agents/hapax_voice/gemini_live.py)
+    The Gemini Live speech-to-speech backend (agents/hapax_daimonion/gemini_live.py)
     connects directly to Google's Gemini API via WebSocket, bypassing the
     LiteLLM proxy. This violates cb-llm-001 ("route all LLM calls through
     LiteLLM proxy").

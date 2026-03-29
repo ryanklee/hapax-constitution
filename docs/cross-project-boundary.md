@@ -86,7 +86,7 @@ chrome_sync, claude_code_sync, obsidian_sync.
 
 Analysis agents (3): research, code_review, activity_analyzer.
 
-Audio agents (3): audio_processor, hapax_voice, audio_recorder (systemd).
+Audio agents (3): audio_processor, hapax_daimonion, audio_recorder (systemd).
 
 Other (3): query, profiler_sources, demo_eval.
 

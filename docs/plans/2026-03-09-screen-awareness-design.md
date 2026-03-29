@@ -1,4 +1,4 @@
-# Screen Awareness for Hapax Voice — Design
+# Screen Awareness for Hapax Daimonion — Design
 
 **Date:** 2026-03-09
 **Status:** Approved
@@ -6,7 +6,7 @@
 
 ## Goal
 
-Give the Hapax Voice daemon continuous awareness of what's on the operator's screen, enabling contextual voice interactions ("help me with this") and conservative proactive alerts when high-confidence issues are visible (errors, failures, stack traces).
+Give the Hapax Daimonion daemon continuous awareness of what's on the operator's screen, enabling contextual voice interactions ("help me with this") and conservative proactive alerts when high-confidence issues are visible (errors, failures, stack traces).
 
 ## Architecture
 
@@ -66,7 +66,7 @@ The screen analyzer LLM needs deep Hapax system knowledge to make intelligent ob
 
 ### Static Core Prompt (~500 tokens)
 
-Embedded in the analyzer, loaded from `<local-share>/hapax-voice/screen_context.md`:
+Embedded in the analyzer, loaded from `<local-share>/hapax-daimonion/screen_context.md`:
 
 - Service topology (service → port → purpose)
 - Agent roster (name → function → invocation)
@@ -85,7 +85,7 @@ Embedded in the analyzer, loaded from `<local-share>/hapax-voice/screen_context.
 The drift-detector agent (runs weekly) gets a new dimension: `screen_analyzer_context`.
 
 - Compares static core prompt against live state: `docker compose ps`, `systemctl --user list-units`, port scan, agent directory listing
-- If drift detected → auto-generates updated static core → writes to `<local-share>/hapax-voice/screen_context.md`
+- If drift detected → auto-generates updated static core → writes to `<local-share>/hapax-daimonion/screen_context.md`
 - Screen analyzer reloads on SIGHUP or next startup
 - Drift corrections also update all relevant documentation across Hapax repos (hapaxromana/agent-architecture.md, ai-agents/README.md, component registry, etc.)
 

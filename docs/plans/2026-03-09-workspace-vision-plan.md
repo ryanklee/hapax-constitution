@@ -12,7 +12,7 @@
 
 **Working directory:** `<ai-agents>/` (all file paths relative to this root unless noted)
 
-**Existing test baseline:** 40 tests passing in `tests/hapax_voice/`
+**Existing test baseline:** 40 tests passing in `tests/hapax_daimonion/`
 
 ---
 
@@ -21,17 +21,17 @@
 ### Task 1: WebcamCapturer Data Models
 
 **Files:**
-- Modify: `agents/hapax_voice/screen_models.py`
-- Test: `tests/hapax_voice/test_screen_models.py`
+- Modify: `agents/hapax_daimonion/screen_models.py`
+- Test: `tests/hapax_daimonion/test_screen_models.py`
 
 **Context:** The existing `screen_models.py` has `Issue` and `ScreenAnalysis` dataclasses. We add `CameraConfig` and the extended `WorkspaceAnalysis` model here. We also add `GearObservation` for hardware state tracking.
 
 **Step 1: Write the failing tests**
 
 ```python
-# Append to tests/hapax_voice/test_screen_models.py
+# Append to tests/hapax_daimonion/test_screen_models.py
 
-from agents.hapax_voice.screen_models import CameraConfig, GearObservation, WorkspaceAnalysis
+from agents.hapax_daimonion.screen_models import CameraConfig, GearObservation, WorkspaceAnalysis
 
 
 def test_camera_config_defaults():
@@ -81,12 +81,12 @@ def test_workspace_analysis_defaults():
 
 **Step 2: Run tests to verify they fail**
 
-Run: `uv run pytest tests/hapax_voice/test_screen_models.py -v`
+Run: `uv run pytest tests/hapax_daimonion/test_screen_models.py -v`
 Expected: FAIL — ImportError for CameraConfig, GearObservation, WorkspaceAnalysis
 
 **Step 3: Implement the models**
 
-Add to `agents/hapax_voice/screen_models.py` after the existing `ScreenAnalysis` class:
+Add to `agents/hapax_daimonion/screen_models.py` after the existing `ScreenAnalysis` class:
 
 ```python
 @dataclass(frozen=True)
@@ -130,13 +130,13 @@ class WorkspaceAnalysis:
 
 **Step 4: Run tests to verify they pass**
 
-Run: `uv run pytest tests/hapax_voice/test_screen_models.py -v`
+Run: `uv run pytest tests/hapax_daimonion/test_screen_models.py -v`
 Expected: All PASS (existing 4 + new 5 = 9 tests)
 
 **Step 5: Commit**
 
 ```bash
-git add agents/hapax_voice/screen_models.py tests/hapax_voice/test_screen_models.py
+git add agents/hapax_daimonion/screen_models.py tests/hapax_daimonion/test_screen_models.py
 git commit -m "feat: add webcam data models — CameraConfig, GearObservation, WorkspaceAnalysis"
 ```
 
@@ -145,8 +145,8 @@ git commit -m "feat: add webcam data models — CameraConfig, GearObservation, W
 ### Task 2: WebcamCapturer
 
 **Files:**
-- Create: `agents/hapax_voice/webcam_capturer.py`
-- Test: `tests/hapax_voice/test_webcam_capturer.py`
+- Create: `agents/hapax_daimonion/webcam_capturer.py`
+- Test: `tests/hapax_daimonion/test_webcam_capturer.py`
 
 **Context:** This is the foundational capture primitive. It manages multiple cameras by role, captures frames via ffmpeg, and returns base64-encoded images. Follow the same patterns as `screen_capturer.py` (subprocess with timeout, temp directory, base64 encoding, cooldown tracking, fail-open on errors).
 
@@ -159,8 +159,8 @@ import time
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-from agents.hapax_voice.screen_models import CameraConfig
-from agents.hapax_voice.webcam_capturer import WebcamCapturer
+from agents.hapax_daimonion.screen_models import CameraConfig
+from agents.hapax_daimonion.webcam_capturer import WebcamCapturer
 
 
 def test_capturer_init_with_cameras():
@@ -195,8 +195,8 @@ def test_capturer_returns_base64_on_success(tmp_path):
     fake_file = tmp_path / "frame.jpg"
     fake_file.write_bytes(fake_jpg)
 
-    with patch("agents.hapax_voice.webcam_capturer.subprocess.run") as mock_run, \
-         patch("agents.hapax_voice.webcam_capturer.tempfile.mkdtemp", return_value=str(tmp_path)):
+    with patch("agents.hapax_daimonion.webcam_capturer.subprocess.run") as mock_run, \
+         patch("agents.hapax_daimonion.webcam_capturer.tempfile.mkdtemp", return_value=str(tmp_path)):
         mock_run.return_value = MagicMock(returncode=0)
         # Place a fake output file where the capturer expects it
         result = cap.capture("operator")
@@ -210,7 +210,7 @@ def test_capturer_returns_none_on_ffmpeg_failure():
     cameras = [CameraConfig(device="/dev/video0", role="operator")]
     cap = WebcamCapturer(cameras=cameras, cooldown_s=0)
 
-    with patch("agents.hapax_voice.webcam_capturer.subprocess.run") as mock_run:
+    with patch("agents.hapax_daimonion.webcam_capturer.subprocess.run") as mock_run:
         mock_run.return_value = MagicMock(returncode=1)
         result = cap.capture("operator")
 
@@ -234,12 +234,12 @@ def test_capturer_reset_cooldown():
 
 **Step 2: Run tests to verify they fail**
 
-Run: `uv run pytest tests/hapax_voice/test_webcam_capturer.py -v`
+Run: `uv run pytest tests/hapax_daimonion/test_webcam_capturer.py -v`
 Expected: FAIL — ModuleNotFoundError for webcam_capturer
 
 **Step 3: Implement WebcamCapturer**
 
-Create `agents/hapax_voice/webcam_capturer.py`:
+Create `agents/hapax_daimonion/webcam_capturer.py`:
 
 ```python
 """Webcam frame capture via ffmpeg V4L2."""
@@ -253,7 +253,7 @@ import tempfile
 import time
 from pathlib import Path
 
-from agents.hapax_voice.screen_models import CameraConfig
+from agents.hapax_daimonion.screen_models import CameraConfig
 
 log = logging.getLogger(__name__)
 
@@ -355,7 +355,7 @@ class WebcamCapturer:
 
 **Step 4: Run tests to verify they pass**
 
-Run: `uv run pytest tests/hapax_voice/test_webcam_capturer.py -v`
+Run: `uv run pytest tests/hapax_daimonion/test_webcam_capturer.py -v`
 Expected: All PASS (7 tests)
 
 Note: `test_capturer_returns_base64_on_success` may need adjustment depending on how the mock interacts with the temp directory. The test should verify the base64 encoding pipeline works when ffmpeg produces a file. If the mock doesn't create the output file, the test should set up the fake file at the expected `outpath` location inside the patched tmpdir. Adjust as needed.
@@ -363,7 +363,7 @@ Note: `test_capturer_returns_base64_on_success` may need adjustment depending on
 **Step 5: Commit**
 
 ```bash
-git add agents/hapax_voice/webcam_capturer.py tests/hapax_voice/test_webcam_capturer.py
+git add agents/hapax_daimonion/webcam_capturer.py tests/hapax_daimonion/test_webcam_capturer.py
 git commit -m "feat: add WebcamCapturer — role-based multi-camera capture via ffmpeg"
 ```
 
@@ -372,18 +372,18 @@ git commit -m "feat: add WebcamCapturer — role-based multi-camera capture via 
 ### Task 3: Webcam Config Fields
 
 **Files:**
-- Modify: `agents/hapax_voice/config.py:21-64`
-- Test: `tests/hapax_voice/test_daemon_screen_integration.py` (append)
+- Modify: `agents/hapax_daimonion/config.py:21-64`
+- Test: `tests/hapax_daimonion/test_daemon_screen_integration.py` (append)
 
 **Context:** Add webcam configuration fields to VoiceConfig. The existing screen monitor fields live at lines 53-58 of config.py.
 
 **Step 1: Write the failing tests**
 
 ```python
-# Append to tests/hapax_voice/test_daemon_screen_integration.py
+# Append to tests/hapax_daimonion/test_daemon_screen_integration.py
 
 def test_voice_config_has_webcam_fields():
-    from agents.hapax_voice.config import VoiceConfig
+    from agents.hapax_daimonion.config import VoiceConfig
     cfg = VoiceConfig()
     assert cfg.webcam_enabled is True
     assert "BRIO" in cfg.webcam_brio_device
@@ -398,12 +398,12 @@ def test_voice_config_has_webcam_fields():
 
 **Step 2: Run test to verify it fails**
 
-Run: `uv run pytest tests/hapax_voice/test_daemon_screen_integration.py::test_voice_config_has_webcam_fields -v`
+Run: `uv run pytest tests/hapax_daimonion/test_daemon_screen_integration.py::test_voice_config_has_webcam_fields -v`
 Expected: FAIL — AttributeError
 
 **Step 3: Add config fields**
 
-In `agents/hapax_voice/config.py`, after the screen monitor fields (after line 58), add:
+In `agents/hapax_daimonion/config.py`, after the screen monitor fields (after line 58), add:
 
 ```python
     # Webcam settings
@@ -426,18 +426,18 @@ In `agents/hapax_voice/config.py`, after the screen monitor fields (after line 5
     timelapse_enabled: bool = False
     timelapse_interval_s: float = 60.0
     timelapse_retention_days: int = 7
-    timelapse_path: str = "<local-share>/hapax-voice/timelapse"
+    timelapse_path: str = "<local-share>/hapax-daimonion/timelapse"
 ```
 
 **Step 4: Run tests to verify they pass**
 
-Run: `uv run pytest tests/hapax_voice/test_daemon_screen_integration.py -v`
+Run: `uv run pytest tests/hapax_daimonion/test_daemon_screen_integration.py -v`
 Expected: All PASS
 
 **Step 5: Commit**
 
 ```bash
-git add agents/hapax_voice/config.py tests/hapax_voice/test_daemon_screen_integration.py
+git add agents/hapax_daimonion/config.py tests/hapax_daimonion/test_daemon_screen_integration.py
 git commit -m "feat: add webcam, presence, workspace, and timelapse config fields"
 ```
 
@@ -483,8 +483,8 @@ Note: If `uv sync` fails due to dependency conflicts, try `uv pip install mediap
 ### Task 5: Face Detector Module
 
 **Files:**
-- Create: `agents/hapax_voice/face_detector.py`
-- Test: `tests/hapax_voice/test_face_detector.py`
+- Create: `agents/hapax_daimonion/face_detector.py`
+- Test: `tests/hapax_daimonion/test_face_detector.py`
 
 **Context:** A lightweight face detection wrapper around MediaPipe BlazeFace. Runs on CPU only, returns boolean (face detected yes/no) plus count. Must work headless (no display). Designed to process raw image bytes (JPEG/PNG) or numpy arrays.
 
@@ -495,7 +495,7 @@ Note: If `uv sync` fails due to dependency conflicts, try `uv pip install mediap
 import numpy as np
 from unittest.mock import patch, MagicMock
 
-from agents.hapax_voice.face_detector import FaceDetector
+from agents.hapax_daimonion.face_detector import FaceDetector
 
 
 def test_detector_init():
@@ -512,7 +512,7 @@ def test_detector_returns_false_on_empty_image():
 
 
 def test_detector_result_dataclass():
-    from agents.hapax_voice.face_detector import FaceResult
+    from agents.hapax_daimonion.face_detector import FaceResult
     r = FaceResult(detected=True, count=2)
     assert r.detected is True
     assert r.count == 2
@@ -542,12 +542,12 @@ def test_detector_from_base64():
 
 **Step 2: Run tests to verify they fail**
 
-Run: `uv run pytest tests/hapax_voice/test_face_detector.py -v`
+Run: `uv run pytest tests/hapax_daimonion/test_face_detector.py -v`
 Expected: FAIL — ModuleNotFoundError
 
 **Step 3: Implement FaceDetector**
 
-Create `agents/hapax_voice/face_detector.py`:
+Create `agents/hapax_daimonion/face_detector.py`:
 
 ```python
 """Lightweight face detection using MediaPipe BlazeFace (CPU-only)."""
@@ -634,13 +634,13 @@ class FaceDetector:
 
 **Step 4: Run tests to verify they pass**
 
-Run: `uv run pytest tests/hapax_voice/test_face_detector.py -v`
+Run: `uv run pytest tests/hapax_daimonion/test_face_detector.py -v`
 Expected: All PASS (5 tests)
 
 **Step 5: Commit**
 
 ```bash
-git add agents/hapax_voice/face_detector.py tests/hapax_voice/test_face_detector.py
+git add agents/hapax_daimonion/face_detector.py tests/hapax_daimonion/test_face_detector.py
 git commit -m "feat: add FaceDetector — MediaPipe BlazeFace CPU-only face detection"
 ```
 
@@ -649,21 +649,21 @@ git commit -m "feat: add FaceDetector — MediaPipe BlazeFace CPU-only face dete
 ### Task 6: Upgrade PresenceDetector with Face Fusion
 
 **Files:**
-- Modify: `agents/hapax_voice/presence.py:20-94`
-- Modify: `tests/hapax_voice/test_presence.py` (create if not exists, or find existing)
+- Modify: `agents/hapax_daimonion/presence.py:20-94`
+- Modify: `tests/hapax_daimonion/test_presence.py` (create if not exists, or find existing)
 
 **Context:** The current PresenceDetector scores purely on VAD event count. We add a `_face_detected` boolean with a decay timer, and a composite `score` property that fuses both signals. The face detection loop runs separately (driven by WorkspaceMonitor), so PresenceDetector just receives face events via a public method.
 
 **Step 1: Write the failing tests**
 
-Create `tests/hapax_voice/test_presence_face.py`:
+Create `tests/hapax_daimonion/test_presence_face.py`:
 
 ```python
 """Tests for PresenceDetector face detection fusion."""
 import time
 from unittest.mock import patch
 
-from agents.hapax_voice.presence import PresenceDetector
+from agents.hapax_daimonion.presence import PresenceDetector
 
 
 def test_presence_record_face_event():
@@ -737,12 +737,12 @@ def test_presence_guest_count():
 
 **Step 2: Run tests to verify they fail**
 
-Run: `uv run pytest tests/hapax_voice/test_presence_face.py -v`
+Run: `uv run pytest tests/hapax_daimonion/test_presence_face.py -v`
 Expected: FAIL — AttributeError on record_face_event, face_detected, etc.
 
 **Step 3: Modify PresenceDetector**
 
-In `agents/hapax_voice/presence.py`, modify the class to add face detection fusion. Add these attributes to `__init__`:
+In `agents/hapax_daimonion/presence.py`, modify the class to add face detection fusion. Add these attributes to `__init__`:
 
 ```python
         self._face_detected: bool = False
@@ -799,17 +799,17 @@ Also add `import time` at the top if not already present.
 
 **Step 4: Run tests to verify they pass**
 
-Run: `uv run pytest tests/hapax_voice/test_presence_face.py -v`
+Run: `uv run pytest tests/hapax_daimonion/test_presence_face.py -v`
 Expected: All PASS (9 tests)
 
 Also run existing presence tests to verify no regression:
-Run: `uv run pytest tests/hapax_voice/ -v`
+Run: `uv run pytest tests/hapax_daimonion/ -v`
 Expected: All PASS
 
 **Step 5: Commit**
 
 ```bash
-git add agents/hapax_voice/presence.py tests/hapax_voice/test_presence_face.py
+git add agents/hapax_daimonion/presence.py tests/hapax_daimonion/test_presence_face.py
 git commit -m "feat: upgrade PresenceDetector with face detection fusion scoring"
 ```
 
@@ -818,8 +818,8 @@ git commit -m "feat: upgrade PresenceDetector with face detection fusion scoring
 ### Task 7: Update ContextGate for New Presence Levels
 
 **Files:**
-- Modify: `agents/hapax_voice/context_gate.py:43-61`
-- Test: append to existing context_gate tests or create `tests/hapax_voice/test_context_gate_presence.py`
+- Modify: `agents/hapax_daimonion/context_gate.py:43-61`
+- Test: append to existing context_gate tests or create `tests/hapax_daimonion/test_context_gate_presence.py`
 
 **Context:** The ContextGate currently doesn't check presence directly — it only checks session, volume, MIDI, and ambient audio. The proactive delivery loop in `__main__.py` checks presence separately (line 230: `if presence == "likely_absent": continue`). However, `definitely_present` is a stronger signal that could be surfaced. For now, the ContextGate itself doesn't need changes — but the proactive delivery loop in `__main__.py` should recognize the new level. This is wired in Task 11 (daemon integration).
 
@@ -832,8 +832,8 @@ git commit -m "feat: upgrade PresenceDetector with face detection fusion scoring
 ### Task 8: WorkspaceAnalyzer (Multi-Image Gemini Flash)
 
 **Files:**
-- Create: `agents/hapax_voice/workspace_analyzer.py`
-- Test: `tests/hapax_voice/test_workspace_analyzer.py`
+- Create: `agents/hapax_daimonion/workspace_analyzer.py`
+- Test: `tests/hapax_daimonion/test_workspace_analyzer.py`
 
 **Context:** This replaces the single-image `ScreenAnalyzer` with a multi-image analyzer that sends screen + operator camera + hardware camera frames to Gemini Flash in one API call. It reuses the lazy AsyncOpenAI client pattern from `screen_analyzer.py`. The system prompt is updated to describe three image inputs and request the expanded JSON schema.
 
@@ -846,8 +846,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from agents.hapax_voice.workspace_analyzer import WorkspaceAnalyzer
-from agents.hapax_voice.screen_models import WorkspaceAnalysis
+from agents.hapax_daimonion.workspace_analyzer import WorkspaceAnalyzer
+from agents.hapax_daimonion.screen_models import WorkspaceAnalysis
 
 
 @pytest.mark.asyncio
@@ -873,7 +873,7 @@ async def test_analyzer_returns_workspace_analysis():
         "workspace_change": False,
     })
 
-    with patch("agents.hapax_voice.workspace_analyzer.AsyncOpenAI") as mock_cls:
+    with patch("agents.hapax_daimonion.workspace_analyzer.AsyncOpenAI") as mock_cls:
         mock_client = MagicMock()
         mock_client.chat.completions.create = AsyncMock(return_value=mock_response)
         mock_cls.return_value = mock_client
@@ -908,7 +908,7 @@ async def test_analyzer_works_with_screen_only():
         "keywords": [],
     })
 
-    with patch("agents.hapax_voice.workspace_analyzer.AsyncOpenAI") as mock_cls:
+    with patch("agents.hapax_daimonion.workspace_analyzer.AsyncOpenAI") as mock_cls:
         mock_client = MagicMock()
         mock_client.chat.completions.create = AsyncMock(return_value=mock_response)
         mock_cls.return_value = mock_client
@@ -924,7 +924,7 @@ async def test_analyzer_works_with_screen_only():
 async def test_analyzer_returns_none_on_failure():
     analyzer = WorkspaceAnalyzer(model="gemini-flash")
 
-    with patch("agents.hapax_voice.workspace_analyzer.AsyncOpenAI") as mock_cls:
+    with patch("agents.hapax_daimonion.workspace_analyzer.AsyncOpenAI") as mock_cls:
         mock_client = MagicMock()
         mock_client.chat.completions.create = AsyncMock(side_effect=Exception("API down"))
         mock_cls.return_value = mock_client
@@ -965,12 +965,12 @@ def test_analyzer_omits_missing_cameras():
 
 **Step 2: Run tests to verify they fail**
 
-Run: `uv run pytest tests/hapax_voice/test_workspace_analyzer.py -v`
+Run: `uv run pytest tests/hapax_daimonion/test_workspace_analyzer.py -v`
 Expected: FAIL — ModuleNotFoundError
 
 **Step 3: Implement WorkspaceAnalyzer**
 
-Create `agents/hapax_voice/workspace_analyzer.py`:
+Create `agents/hapax_daimonion/workspace_analyzer.py`:
 
 ```python
 """Workspace analysis via Gemini Flash vision model (multi-image)."""
@@ -983,7 +983,7 @@ from pathlib import Path
 
 from openai import AsyncOpenAI
 
-from agents.hapax_voice.screen_models import (
+from agents.hapax_daimonion.screen_models import (
     GearObservation,
     Issue,
     WorkspaceAnalysis,
@@ -991,7 +991,7 @@ from agents.hapax_voice.screen_models import (
 
 log = logging.getLogger(__name__)
 
-DEFAULT_CONTEXT_PATH = Path.home() / ".local" / "share" / "hapax-voice" / "screen_context.md"
+DEFAULT_CONTEXT_PATH = Path.home() / ".local" / "share" / "hapax-daimonion" / "screen_context.md"
 
 _BASE_PROMPT = """\
 You are a workspace awareness system for a single-operator music production studio
@@ -1178,13 +1178,13 @@ class WorkspaceAnalyzer:
 
 **Step 4: Run tests to verify they pass**
 
-Run: `uv run pytest tests/hapax_voice/test_workspace_analyzer.py -v`
+Run: `uv run pytest tests/hapax_daimonion/test_workspace_analyzer.py -v`
 Expected: All PASS (5 tests)
 
 **Step 5: Commit**
 
 ```bash
-git add agents/hapax_voice/workspace_analyzer.py tests/hapax_voice/test_workspace_analyzer.py
+git add agents/hapax_daimonion/workspace_analyzer.py tests/hapax_daimonion/test_workspace_analyzer.py
 git commit -m "feat: add WorkspaceAnalyzer — multi-image Gemini Flash vision analysis"
 ```
 
@@ -1193,8 +1193,8 @@ git commit -m "feat: add WorkspaceAnalyzer — multi-image Gemini Flash vision a
 ### Task 9: WorkspaceMonitor (Replaces ScreenMonitor)
 
 **Files:**
-- Create: `agents/hapax_voice/workspace_monitor.py`
-- Test: `tests/hapax_voice/test_workspace_monitor.py`
+- Create: `agents/hapax_daimonion/workspace_monitor.py`
+- Test: `tests/hapax_daimonion/test_workspace_monitor.py`
 
 **Context:** WorkspaceMonitor is the evolved ScreenMonitor. It composes ScreenCapturer + WebcamCapturer + WorkspaceAnalyzer + ChangeDetector. It also drives the face detection loop for PresenceDetector. The API surface is identical to ScreenMonitor (same properties, same `run()`, same `set_notification_queue()`) so the daemon can swap it in.
 
@@ -1209,10 +1209,10 @@ from unittest.mock import MagicMock, patch, AsyncMock
 
 import pytest
 
-from agents.hapax_voice.screen_models import (
+from agents.hapax_daimonion.screen_models import (
     CameraConfig, Issue, WorkspaceAnalysis, GearObservation,
 )
-from agents.hapax_voice.workspace_monitor import WorkspaceMonitor
+from agents.hapax_daimonion.workspace_monitor import WorkspaceMonitor
 
 
 def _make_analysis(**kwargs):
@@ -1307,12 +1307,12 @@ def test_monitor_disabled_without_crash():
 
 **Step 2: Run tests to verify they fail**
 
-Run: `uv run pytest tests/hapax_voice/test_workspace_monitor.py -v`
+Run: `uv run pytest tests/hapax_daimonion/test_workspace_monitor.py -v`
 Expected: FAIL — ModuleNotFoundError
 
 **Step 3: Implement WorkspaceMonitor**
 
-Create `agents/hapax_voice/workspace_monitor.py`:
+Create `agents/hapax_daimonion/workspace_monitor.py`:
 
 ```python
 """Workspace awareness orchestrator composing screen, webcam, and analysis."""
@@ -1323,20 +1323,20 @@ import logging
 import time
 from typing import TYPE_CHECKING
 
-from agents.hapax_voice.notification_queue import VoiceNotification
-from agents.hapax_voice.screen_capturer import ScreenCapturer
-from agents.hapax_voice.screen_change_detector import ChangeDetector, FocusState
-from agents.hapax_voice.screen_models import (
+from agents.hapax_daimonion.notification_queue import VoiceNotification
+from agents.hapax_daimonion.screen_capturer import ScreenCapturer
+from agents.hapax_daimonion.screen_change_detector import ChangeDetector, FocusState
+from agents.hapax_daimonion.screen_models import (
     CameraConfig,
     WorkspaceAnalysis,
 )
-from agents.hapax_voice.webcam_capturer import WebcamCapturer
-from agents.hapax_voice.workspace_analyzer import WorkspaceAnalyzer
+from agents.hapax_daimonion.webcam_capturer import WebcamCapturer
+from agents.hapax_daimonion.workspace_analyzer import WorkspaceAnalyzer
 
 if TYPE_CHECKING:
-    from agents.hapax_voice.face_detector import FaceDetector
-    from agents.hapax_voice.notification_queue import NotificationQueue
-    from agents.hapax_voice.presence import PresenceDetector
+    from agents.hapax_daimonion.face_detector import FaceDetector
+    from agents.hapax_daimonion.notification_queue import NotificationQueue
+    from agents.hapax_daimonion.presence import PresenceDetector
 
 log = logging.getLogger(__name__)
 
@@ -1519,7 +1519,7 @@ class WorkspaceMonitor:
         # Lazy-init face detector
         if self._face_detector is None:
             try:
-                from agents.hapax_voice.face_detector import FaceDetector
+                from agents.hapax_daimonion.face_detector import FaceDetector
                 self._face_detector = FaceDetector()
             except Exception as exc:
                 log.warning("Face detector unavailable: %s", exc)
@@ -1572,13 +1572,13 @@ class WorkspaceMonitor:
 
 **Step 4: Run tests to verify they pass**
 
-Run: `uv run pytest tests/hapax_voice/test_workspace_monitor.py -v`
+Run: `uv run pytest tests/hapax_daimonion/test_workspace_monitor.py -v`
 Expected: All PASS (9 tests)
 
 **Step 5: Commit**
 
 ```bash
-git add agents/hapax_voice/workspace_monitor.py tests/hapax_voice/test_workspace_monitor.py
+git add agents/hapax_daimonion/workspace_monitor.py tests/hapax_daimonion/test_workspace_monitor.py
 git commit -m "feat: add WorkspaceMonitor — multi-source workspace awareness orchestrator"
 ```
 
@@ -1587,19 +1587,19 @@ git commit -m "feat: add WorkspaceMonitor — multi-source workspace awareness o
 ### Task 10: Update Persona for Workspace Context
 
 **Files:**
-- Modify: `agents/hapax_voice/persona.py:64-78`
-- Modify: `tests/hapax_voice/test_daemon_screen_integration.py` (update existing tests)
+- Modify: `agents/hapax_daimonion/persona.py:64-78`
+- Modify: `tests/hapax_daimonion/test_daemon_screen_integration.py` (update existing tests)
 
 **Context:** The existing `screen_context_block()` function formats `ScreenAnalysis` for the voice daemon system prompt. Update it to accept `WorkspaceAnalysis` and include operator and hardware context when available.
 
 **Step 1: Write the failing test**
 
 ```python
-# Append to tests/hapax_voice/test_daemon_screen_integration.py
+# Append to tests/hapax_daimonion/test_daemon_screen_integration.py
 
 def test_workspace_context_block_with_gear():
-    from agents.hapax_voice.persona import screen_context_block
-    from agents.hapax_voice.screen_models import WorkspaceAnalysis, GearObservation
+    from agents.hapax_daimonion.persona import screen_context_block
+    from agents.hapax_daimonion.screen_models import WorkspaceAnalysis, GearObservation
     analysis = WorkspaceAnalysis(
         app="cosmic-term", context="running build", summary="Build in progress.",
         operator_present=True, operator_activity="typing",
@@ -1617,12 +1617,12 @@ def test_workspace_context_block_with_gear():
 
 **Step 2: Run test to verify it fails**
 
-Run: `uv run pytest tests/hapax_voice/test_daemon_screen_integration.py::test_workspace_context_block_with_gear -v`
+Run: `uv run pytest tests/hapax_daimonion/test_daemon_screen_integration.py::test_workspace_context_block_with_gear -v`
 Expected: FAIL — gear state not in output
 
 **Step 3: Update screen_context_block**
 
-In `agents/hapax_voice/persona.py`, modify the `screen_context_block` function to handle both `ScreenAnalysis` and `WorkspaceAnalysis`:
+In `agents/hapax_daimonion/persona.py`, modify the `screen_context_block` function to handle both `ScreenAnalysis` and `WorkspaceAnalysis`:
 
 ```python
 def screen_context_block(analysis: ScreenAnalysis | None) -> str:
@@ -1658,13 +1658,13 @@ Update the TYPE_CHECKING import at the top of persona.py to also import Workspac
 
 **Step 4: Run tests to verify they pass**
 
-Run: `uv run pytest tests/hapax_voice/test_daemon_screen_integration.py -v`
+Run: `uv run pytest tests/hapax_daimonion/test_daemon_screen_integration.py -v`
 Expected: All PASS
 
 **Step 5: Commit**
 
 ```bash
-git add agents/hapax_voice/persona.py tests/hapax_voice/test_daemon_screen_integration.py
+git add agents/hapax_daimonion/persona.py tests/hapax_daimonion/test_daemon_screen_integration.py
 git commit -m "feat: extend screen_context_block for workspace analysis with gear state"
 ```
 
@@ -1673,24 +1673,24 @@ git commit -m "feat: extend screen_context_block for workspace analysis with gea
 ### Task 11: Daemon Integration — Swap ScreenMonitor for WorkspaceMonitor
 
 **Files:**
-- Modify: `agents/hapax_voice/__main__.py:17,60-68,291-307`
-- Test: `tests/hapax_voice/test_daemon_screen_integration.py` (append)
+- Modify: `agents/hapax_daimonion/__main__.py:17,60-68,291-307`
+- Test: `tests/hapax_daimonion/test_daemon_screen_integration.py` (append)
 
 **Context:** Replace the ScreenMonitor import and instantiation with WorkspaceMonitor. Build camera configs from the new config fields. Wire the presence detector for face updates. Update the SIGHUP handler.
 
 **Step 1: Write the failing test**
 
 ```python
-# Append to tests/hapax_voice/test_daemon_screen_integration.py
+# Append to tests/hapax_daimonion/test_daemon_screen_integration.py
 
 def test_daemon_creates_workspace_monitor():
     """VoiceDaemon should use WorkspaceMonitor with camera configs."""
-    from agents.hapax_voice.config import VoiceConfig
+    from agents.hapax_daimonion.config import VoiceConfig
     cfg = VoiceConfig(screen_monitor_enabled=True, webcam_enabled=True)
 
-    with patch("agents.hapax_voice.__main__.WorkspaceMonitor") as mock_wm, \
-         patch("agents.hapax_voice.__main__.ScreenMonitor", side_effect=ImportError):
-        from agents.hapax_voice.__main__ import VoiceDaemon
+    with patch("agents.hapax_daimonion.__main__.WorkspaceMonitor") as mock_wm, \
+         patch("agents.hapax_daimonion.__main__.ScreenMonitor", side_effect=ImportError):
+        from agents.hapax_daimonion.__main__ import VoiceDaemon
         daemon = VoiceDaemon(cfg=cfg)
         # Should have created a workspace monitor with camera configs
         assert mock_wm.called
@@ -1705,10 +1705,10 @@ Expected: FAIL — WorkspaceMonitor not imported in __main__.py
 Replace the ScreenMonitor import (line 17):
 ```python
 # Remove:
-from agents.hapax_voice.screen_monitor import ScreenMonitor
+from agents.hapax_daimonion.screen_monitor import ScreenMonitor
 # Add:
-from agents.hapax_voice.screen_models import CameraConfig
-from agents.hapax_voice.workspace_monitor import WorkspaceMonitor
+from agents.hapax_daimonion.screen_models import CameraConfig
+from agents.hapax_daimonion.workspace_monitor import WorkspaceMonitor
 ```
 
 Replace the ScreenMonitor instantiation in `__init__` (lines 60-68):
@@ -1772,13 +1772,13 @@ Update the SIGHUP handler (near line 357):
 
 **Step 4: Run all tests to verify no regression**
 
-Run: `uv run pytest tests/hapax_voice/ -v`
+Run: `uv run pytest tests/hapax_daimonion/ -v`
 Expected: All PASS
 
 **Step 5: Commit**
 
 ```bash
-git add agents/hapax_voice/__main__.py tests/hapax_voice/test_daemon_screen_integration.py
+git add agents/hapax_daimonion/__main__.py tests/hapax_daimonion/test_daemon_screen_integration.py
 git commit -m "feat: swap ScreenMonitor for WorkspaceMonitor in voice daemon"
 ```
 
@@ -1789,9 +1789,9 @@ git commit -m "feat: swap ScreenMonitor for WorkspaceMonitor in voice daemon"
 ### Task 12: Document Scanner Hotkey
 
 **Files:**
-- Modify: `agents/hapax_voice/hotkey.py:12` (add "scan" to valid commands)
-- Modify: `agents/hapax_voice/__main__.py` (add scan handler)
-- Test: `tests/hapax_voice/test_hotkey_scan.py`
+- Modify: `agents/hapax_daimonion/hotkey.py:12` (add "scan" to valid commands)
+- Modify: `agents/hapax_daimonion/__main__.py` (add scan handler)
+- Test: `tests/hapax_daimonion/test_hotkey_scan.py`
 
 **Context:** Add a `"scan"` command to the hotkey server. When received, capture a high-res BRIO frame, send to Gemini Flash for OCR, and copy extracted text to clipboard via `wl-copy`.
 
@@ -1805,8 +1805,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 @pytest.mark.asyncio
 async def test_scan_command_captures_and_extracts():
-    from agents.hapax_voice.__main__ import VoiceDaemon
-    from agents.hapax_voice.config import VoiceConfig
+    from agents.hapax_daimonion.__main__ import VoiceDaemon
+    from agents.hapax_daimonion.config import VoiceConfig
 
     cfg = VoiceConfig(webcam_enabled=False, screen_monitor_enabled=False)
     daemon = VoiceDaemon(cfg=cfg)
@@ -1817,7 +1817,7 @@ async def test_scan_command_captures_and_extracts():
     daemon.workspace_monitor._webcam_capturer.has_camera.return_value = True
     daemon.workspace_monitor._webcam_capturer.reset_cooldown = MagicMock()
 
-    with patch("agents.hapax_voice.__main__.subprocess.run") as mock_run:
+    with patch("agents.hapax_daimonion.__main__.subprocess.run") as mock_run:
         mock_run.return_value = MagicMock(returncode=0)
         await daemon._handle_hotkey("scan")
         # Should not crash, even if Gemini call fails
@@ -1856,7 +1856,7 @@ Add the `_handle_scan` method to VoiceDaemon:
             return
 
         try:
-            from agents.hapax_voice.workspace_analyzer import WorkspaceAnalyzer
+            from agents.hapax_daimonion.workspace_analyzer import WorkspaceAnalyzer
             client = self.workspace_monitor._analyzer._get_client()
             response = await client.chat.completions.create(
                 model=self.workspace_monitor._analyzer.model,
@@ -1879,13 +1879,13 @@ Add the `_handle_scan` method to VoiceDaemon:
 
 **Step 4: Run tests**
 
-Run: `uv run pytest tests/hapax_voice/test_hotkey_scan.py -v`
+Run: `uv run pytest tests/hapax_daimonion/test_hotkey_scan.py -v`
 Expected: All PASS
 
 **Step 5: Commit**
 
 ```bash
-git add agents/hapax_voice/hotkey.py agents/hapax_voice/__main__.py tests/hapax_voice/test_hotkey_scan.py
+git add agents/hapax_daimonion/hotkey.py agents/hapax_daimonion/__main__.py tests/hapax_daimonion/test_hotkey_scan.py
 git commit -m "feat: add document scanner hotkey — OCR via Gemini Flash + clipboard"
 ```
 
@@ -1920,7 +1920,7 @@ For the initial implementation, write the latest WorkspaceAnalysis to a JSON fil
     def _persist_analysis(self, analysis: WorkspaceAnalysis) -> None:
         """Write latest analysis to shared state file for cockpit API."""
         import json
-        state_path = Path.home() / ".local" / "share" / "hapax-voice" / "workspace_state.json"
+        state_path = Path.home() / ".local" / "share" / "hapax-daimonion" / "workspace_state.json"
         try:
             state_path.parent.mkdir(parents=True, exist_ok=True)
             data = {
@@ -1943,7 +1943,7 @@ For the initial implementation, write the latest WorkspaceAnalysis to a JSON fil
 **Step 2: Commit**
 
 ```bash
-git add cockpit/api/routes/data.py agents/hapax_voice/workspace_monitor.py
+git add cockpit/api/routes/data.py agents/hapax_daimonion/workspace_monitor.py
 git commit -m "feat: add /api/workspace cockpit endpoint + workspace state persistence"
 ```
 
@@ -2023,7 +2023,7 @@ CAMERAS = {
     "operator": "/dev/v4l/by-id/usb-046d_Logitech_BRIO_5342C819-video-index0",
     "hardware": "/dev/v4l/by-id/usb-046d_HD_Pro_Webcam_C920_2657DFCF-video-index0",
 }
-DEFAULT_PATH = Path.home() / ".local" / "share" / "hapax-voice" / "timelapse"
+DEFAULT_PATH = Path.home() / ".local" / "share" / "hapax-daimonion" / "timelapse"
 
 
 def capture_frame(device: str, role: str, output_dir: Path) -> None:
@@ -2110,7 +2110,7 @@ systemctl --user enable --now webcam-timelapse.timer
 
 ```bash
 systemctl --user status webcam-timelapse.timer
-ls -la <local-share>/hapax-voice/timelapse/
+ls -la <local-share>/hapax-daimonion/timelapse/
 ```
 
 **Step 5: Commit**
@@ -2127,8 +2127,8 @@ git commit -m "feat: add webcam timelapse capture script + systemd units"
 ### Task 16: Activity Mode Detection
 
 **Files:**
-- Create: `agents/hapax_voice/activity_mode.py`
-- Test: `tests/hapax_voice/test_activity_mode.py`
+- Create: `agents/hapax_daimonion/activity_mode.py`
+- Test: `tests/hapax_daimonion/test_activity_mode.py`
 
 **Context:** Classifies the operator's current activity mode based on fused signals: workspace analysis (screen + cameras), presence score, and audio state. The mode feeds into ContextGate for notification suppression and into the voice persona for context-aware responses.
 
@@ -2136,8 +2136,8 @@ git commit -m "feat: add webcam timelapse capture script + systemd units"
 
 ```python
 """Tests for activity mode detection."""
-from agents.hapax_voice.activity_mode import classify_activity_mode
-from agents.hapax_voice.screen_models import WorkspaceAnalysis, GearObservation
+from agents.hapax_daimonion.activity_mode import classify_activity_mode
+from agents.hapax_daimonion.screen_models import WorkspaceAnalysis, GearObservation
 
 
 def test_coding_mode():
@@ -2190,18 +2190,18 @@ def test_research_mode():
 
 **Step 2: Run tests to verify they fail**
 
-Run: `uv run pytest tests/hapax_voice/test_activity_mode.py -v`
+Run: `uv run pytest tests/hapax_daimonion/test_activity_mode.py -v`
 Expected: FAIL — ModuleNotFoundError
 
 **Step 3: Implement**
 
-Create `agents/hapax_voice/activity_mode.py`:
+Create `agents/hapax_daimonion/activity_mode.py`:
 
 ```python
 """Activity mode classification from fused workspace signals."""
 from __future__ import annotations
 
-from agents.hapax_voice.screen_models import WorkspaceAnalysis
+from agents.hapax_daimonion.screen_models import WorkspaceAnalysis
 
 # Apps that suggest coding/development
 _CODE_APPS = {"cosmic-term", "code", "com.visualstudio.code", "neovim", "vim"}
@@ -2250,13 +2250,13 @@ def classify_activity_mode(
 
 **Step 4: Run tests**
 
-Run: `uv run pytest tests/hapax_voice/test_activity_mode.py -v`
+Run: `uv run pytest tests/hapax_daimonion/test_activity_mode.py -v`
 Expected: All PASS (5 tests)
 
 **Step 5: Commit**
 
 ```bash
-git add agents/hapax_voice/activity_mode.py tests/hapax_voice/test_activity_mode.py
+git add agents/hapax_daimonion/activity_mode.py tests/hapax_daimonion/test_activity_mode.py
 git commit -m "feat: add activity mode classification from fused workspace signals"
 ```
 
@@ -2265,8 +2265,8 @@ git commit -m "feat: add activity mode classification from fused workspace signa
 ### Task 17: ContextGate Activity Mode Integration
 
 **Files:**
-- Modify: `agents/hapax_voice/context_gate.py`
-- Test: `tests/hapax_voice/test_context_gate_activity.py`
+- Modify: `agents/hapax_daimonion/context_gate.py`
+- Test: `tests/hapax_daimonion/test_context_gate_activity.py`
 
 **Context:** Add an activity mode check to ContextGate. During `production` and `meeting` modes, block non-urgent proactive notifications.
 
@@ -2275,7 +2275,7 @@ git commit -m "feat: add activity mode classification from fused workspace signa
 ```python
 """Tests for ContextGate activity mode integration."""
 from unittest.mock import MagicMock
-from agents.hapax_voice.context_gate import ContextGate
+from agents.hapax_daimonion.context_gate import ContextGate
 
 
 def test_gate_blocks_during_production():
@@ -2342,16 +2342,16 @@ Add this check to the `check()` method, after the session check and before volum
 
 **Step 4: Run tests**
 
-Run: `uv run pytest tests/hapax_voice/test_context_gate_activity.py -v`
+Run: `uv run pytest tests/hapax_daimonion/test_context_gate_activity.py -v`
 Expected: All PASS
 
-Run full suite: `uv run pytest tests/hapax_voice/ -v`
+Run full suite: `uv run pytest tests/hapax_daimonion/ -v`
 Expected: All PASS
 
 **Step 5: Commit**
 
 ```bash
-git add agents/hapax_voice/context_gate.py tests/hapax_voice/test_context_gate_activity.py
+git add agents/hapax_daimonion/context_gate.py tests/hapax_daimonion/test_context_gate_activity.py
 git commit -m "feat: add activity mode check to ContextGate — blocks during production/meeting"
 ```
 
@@ -2360,7 +2360,7 @@ git commit -m "feat: add activity mode check to ContextGate — blocks during pr
 ### Task 18: Wire Activity Mode into Daemon Loop
 
 **Files:**
-- Modify: `agents/hapax_voice/__main__.py` (main loop, around line 309-320)
+- Modify: `agents/hapax_daimonion/__main__.py` (main loop, around line 309-320)
 
 **Context:** After each workspace analysis completes, classify the activity mode and update the ContextGate. The classification needs the latest workspace analysis plus audio state (from ambient classifier or audio processor).
 
@@ -2368,7 +2368,7 @@ git commit -m "feat: add activity mode check to ContextGate — blocks during pr
 
 Add import at top of `__main__.py`:
 ```python
-from agents.hapax_voice.activity_mode import classify_activity_mode
+from agents.hapax_daimonion.activity_mode import classify_activity_mode
 ```
 
 In the main `run()` loop (around line 309-320), after the sleep, add activity mode update:
@@ -2383,13 +2383,13 @@ In the main `run()` loop (around line 309-320), after the sleep, add activity mo
 
 **Step 2: Run full test suite**
 
-Run: `uv run pytest tests/hapax_voice/ -v`
+Run: `uv run pytest tests/hapax_daimonion/ -v`
 Expected: All PASS
 
 **Step 3: Commit**
 
 ```bash
-git add agents/hapax_voice/__main__.py
+git add agents/hapax_daimonion/__main__.py
 git commit -m "feat: wire activity mode classification into daemon main loop"
 ```
 
@@ -2429,14 +2429,14 @@ git commit -m "feat: add webcam device availability check to drift detector"
 
 **Step 1: Run the full test suite**
 
-Run: `uv run pytest tests/hapax_voice/ -v --tb=short`
+Run: `uv run pytest tests/hapax_daimonion/ -v --tb=short`
 Expected: All tests PASS
 
 **Step 2: Verify camera capture works end-to-end**
 
 Run: `uv run python -c "
-from agents.hapax_voice.screen_models import CameraConfig
-from agents.hapax_voice.webcam_capturer import WebcamCapturer
+from agents.hapax_daimonion.screen_models import CameraConfig
+from agents.hapax_daimonion.webcam_capturer import WebcamCapturer
 cameras = [
     CameraConfig(device='/dev/v4l/by-id/usb-046d_Logitech_BRIO_5342C819-video-index0', role='operator'),
     CameraConfig(device='/dev/v4l/by-id/usb-046d_HD_Pro_Webcam_C920_2657DFCF-video-index0', role='hardware'),
@@ -2452,9 +2452,9 @@ Expected: Both cameras return base64 data
 **Step 3: Verify face detection works**
 
 Run: `uv run python -c "
-from agents.hapax_voice.webcam_capturer import WebcamCapturer
-from agents.hapax_voice.screen_models import CameraConfig
-from agents.hapax_voice.face_detector import FaceDetector
+from agents.hapax_daimonion.webcam_capturer import WebcamCapturer
+from agents.hapax_daimonion.screen_models import CameraConfig
+from agents.hapax_daimonion.face_detector import FaceDetector
 cap = WebcamCapturer(cameras=[CameraConfig(device='/dev/v4l/by-id/usb-046d_Logitech_BRIO_5342C819-video-index0', role='operator')], cooldown_s=0)
 frame = cap.capture('operator')
 det = FaceDetector()

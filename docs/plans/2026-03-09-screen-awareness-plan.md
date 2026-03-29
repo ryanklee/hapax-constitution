@@ -2,7 +2,7 @@
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
-**Goal:** Give the Hapax Voice daemon continuous awareness of what's on the operator's screen, enabling contextual voice interactions and conservative proactive alerts.
+**Goal:** Give the Hapax Daimonion daemon continuous awareness of what's on the operator's screen, enabling contextual voice interactions and conservative proactive alerts.
 
 **Architecture:** A `ScreenMonitor` subsystem with four layers — AT-SPI change detection, cosmic-screenshot capture, Gemini Flash vision analysis, and proactive filtering. Composes into the existing daemon via the same pattern as `PresenceDetector`.
 
@@ -17,14 +17,14 @@
 ### Task 1: ScreenAnalysis Data Models
 
 **Files:**
-- Create: `agents/hapax_voice/screen_models.py`
-- Create: `tests/hapax_voice/test_screen_models.py`
+- Create: `agents/hapax_daimonion/screen_models.py`
+- Create: `tests/hapax_daimonion/test_screen_models.py`
 
 **Step 1: Write the failing test**
 
 ```python
-# tests/hapax_voice/test_screen_models.py
-from agents.hapax_voice.screen_models import Issue, ScreenAnalysis
+# tests/hapax_daimonion/test_screen_models.py
+from agents.hapax_daimonion.screen_models import Issue, ScreenAnalysis
 
 
 def test_issue_creation():
@@ -76,13 +76,13 @@ def test_screen_analysis_no_issues():
 
 **Step 2: Run test to verify it fails**
 
-Run: `cd <ai-agents> && uv run pytest tests/hapax_voice/test_screen_models.py -v`
-Expected: FAIL with `ModuleNotFoundError: No module named 'agents.hapax_voice.screen_models'`
+Run: `cd <ai-agents> && uv run pytest tests/hapax_daimonion/test_screen_models.py -v`
+Expected: FAIL with `ModuleNotFoundError: No module named 'agents.hapax_daimonion.screen_models'`
 
 **Step 3: Write minimal implementation**
 
 ```python
-# agents/hapax_voice/screen_models.py
+# agents/hapax_daimonion/screen_models.py
 """Data models for screen awareness analysis results."""
 from __future__ import annotations
 
@@ -112,14 +112,14 @@ class ScreenAnalysis:
 
 **Step 4: Run test to verify it passes**
 
-Run: `cd <ai-agents> && uv run pytest tests/hapax_voice/test_screen_models.py -v`
+Run: `cd <ai-agents> && uv run pytest tests/hapax_daimonion/test_screen_models.py -v`
 Expected: 4 passed
 
 **Step 5: Commit**
 
 ```bash
 cd <ai-agents>
-git add agents/hapax_voice/screen_models.py tests/hapax_voice/test_screen_models.py
+git add agents/hapax_daimonion/screen_models.py tests/hapax_daimonion/test_screen_models.py
 git commit -m "feat(voice): add screen analysis data models"
 ```
 
@@ -128,19 +128,19 @@ git commit -m "feat(voice): add screen analysis data models"
 ### Task 2: AT-SPI Change Detector
 
 **Files:**
-- Create: `agents/hapax_voice/screen_change_detector.py`
-- Create: `tests/hapax_voice/test_screen_change_detector.py`
+- Create: `agents/hapax_daimonion/screen_change_detector.py`
+- Create: `tests/hapax_daimonion/test_screen_change_detector.py`
 
 **Context:** AT-SPI2 (`gi.repository.Atspi`) provides desktop accessibility info. We poll every 2 seconds for focused window changes. Electron/Flatpak apps only expose window titles, not DOM. AT-SPI serves as a cheap change detection signal. The detector must be fail-open: if AT-SPI is unavailable, it logs a warning and becomes a no-op.
 
 **Step 1: Write the failing test**
 
 ```python
-# tests/hapax_voice/test_screen_change_detector.py
+# tests/hapax_daimonion/test_screen_change_detector.py
 import time
 from unittest.mock import MagicMock, patch
 
-from agents.hapax_voice.screen_change_detector import ChangeDetector, FocusState
+from agents.hapax_daimonion.screen_change_detector import ChangeDetector, FocusState
 
 
 def test_focus_state_creation():
@@ -210,13 +210,13 @@ def test_change_detector_no_atspi_graceful():
 
 **Step 2: Run test to verify it fails**
 
-Run: `cd <ai-agents> && uv run pytest tests/hapax_voice/test_screen_change_detector.py -v`
+Run: `cd <ai-agents> && uv run pytest tests/hapax_daimonion/test_screen_change_detector.py -v`
 Expected: FAIL with `ModuleNotFoundError`
 
 **Step 3: Write minimal implementation**
 
 ```python
-# agents/hapax_voice/screen_change_detector.py
+# agents/hapax_daimonion/screen_change_detector.py
 """AT-SPI2 based change detection for focused window tracking."""
 from __future__ import annotations
 
@@ -319,14 +319,14 @@ class ChangeDetector:
 
 **Step 4: Run test to verify it passes**
 
-Run: `cd <ai-agents> && uv run pytest tests/hapax_voice/test_screen_change_detector.py -v`
+Run: `cd <ai-agents> && uv run pytest tests/hapax_daimonion/test_screen_change_detector.py -v`
 Expected: 5 passed
 
 **Step 5: Commit**
 
 ```bash
 cd <ai-agents>
-git add agents/hapax_voice/screen_change_detector.py tests/hapax_voice/test_screen_change_detector.py
+git add agents/hapax_daimonion/screen_change_detector.py tests/hapax_daimonion/test_screen_change_detector.py
 git commit -m "feat(voice): add AT-SPI change detector for screen awareness"
 ```
 
@@ -335,20 +335,20 @@ git commit -m "feat(voice): add AT-SPI change detector for screen awareness"
 ### Task 3: Screen Capturer
 
 **Files:**
-- Create: `agents/hapax_voice/screen_capturer.py`
-- Create: `tests/hapax_voice/test_screen_capturer.py`
+- Create: `agents/hapax_daimonion/screen_capturer.py`
+- Create: `tests/hapax_daimonion/test_screen_capturer.py`
 
 **Context:** Uses `cosmic-screenshot` to capture the full screen silently (no notification), downscales to 1280x720 via ImageMagick, base64-encodes, then deletes the file. Captures are ephemeral — never persisted. Rate-limited by cooldown. Fail-open: if capture fails, returns None.
 
 **Step 1: Write the failing test**
 
 ```python
-# tests/hapax_voice/test_screen_capturer.py
+# tests/hapax_daimonion/test_screen_capturer.py
 import base64
 import time
 from unittest.mock import MagicMock, patch
 
-from agents.hapax_voice.screen_capturer import ScreenCapturer
+from agents.hapax_daimonion.screen_capturer import ScreenCapturer
 
 
 def test_capturer_respects_cooldown():
@@ -362,7 +362,7 @@ def test_capturer_returns_base64_on_success():
     capturer = ScreenCapturer(cooldown_s=0)
     fake_png = b"\x89PNG fake image data"
 
-    with patch("agents.hapax_voice.screen_capturer.subprocess.run") as mock_run, \
+    with patch("agents.hapax_daimonion.screen_capturer.subprocess.run") as mock_run, \
          patch("pathlib.Path.exists", return_value=True), \
          patch("pathlib.Path.read_bytes", return_value=fake_png), \
          patch("pathlib.Path.unlink"):
@@ -378,7 +378,7 @@ def test_capturer_returns_base64_on_success():
 def test_capturer_returns_none_on_screenshot_failure():
     capturer = ScreenCapturer(cooldown_s=0)
 
-    with patch("agents.hapax_voice.screen_capturer.subprocess.run") as mock_run:
+    with patch("agents.hapax_daimonion.screen_capturer.subprocess.run") as mock_run:
         mock_run.return_value = MagicMock(returncode=1)
         result = capturer.capture()
 
@@ -390,7 +390,7 @@ def test_capturer_cleans_up_temp_files():
 
     unlink_calls = []
 
-    with patch("agents.hapax_voice.screen_capturer.subprocess.run") as mock_run, \
+    with patch("agents.hapax_daimonion.screen_capturer.subprocess.run") as mock_run, \
          patch("pathlib.Path.exists", return_value=True), \
          patch("pathlib.Path.read_bytes", return_value=b"data"), \
          patch("pathlib.Path.unlink", side_effect=lambda *a: unlink_calls.append(1)):
@@ -402,13 +402,13 @@ def test_capturer_cleans_up_temp_files():
 
 **Step 2: Run test to verify it fails**
 
-Run: `cd <ai-agents> && uv run pytest tests/hapax_voice/test_screen_capturer.py -v`
+Run: `cd <ai-agents> && uv run pytest tests/hapax_daimonion/test_screen_capturer.py -v`
 Expected: FAIL with `ModuleNotFoundError`
 
 **Step 3: Write minimal implementation**
 
 ```python
-# agents/hapax_voice/screen_capturer.py
+# agents/hapax_daimonion/screen_capturer.py
 """Screen capture via cosmic-screenshot with downscaling."""
 from __future__ import annotations
 
@@ -494,14 +494,14 @@ class ScreenCapturer:
 
 **Step 4: Run test to verify it passes**
 
-Run: `cd <ai-agents> && uv run pytest tests/hapax_voice/test_screen_capturer.py -v`
+Run: `cd <ai-agents> && uv run pytest tests/hapax_daimonion/test_screen_capturer.py -v`
 Expected: 4 passed
 
 **Step 5: Commit**
 
 ```bash
 cd <ai-agents>
-git add agents/hapax_voice/screen_capturer.py tests/hapax_voice/test_screen_capturer.py
+git add agents/hapax_daimonion/screen_capturer.py tests/hapax_daimonion/test_screen_capturer.py
 git commit -m "feat(voice): add screen capturer with cosmic-screenshot"
 ```
 
@@ -510,22 +510,22 @@ git commit -m "feat(voice): add screen capturer with cosmic-screenshot"
 ### Task 4: Screen Analyzer (Vision LLM)
 
 **Files:**
-- Create: `agents/hapax_voice/screen_analyzer.py`
-- Create: `tests/hapax_voice/test_screen_analyzer.py`
+- Create: `agents/hapax_daimonion/screen_analyzer.py`
+- Create: `tests/hapax_daimonion/test_screen_analyzer.py`
 
-**Context:** Sends base64 screenshot to Gemini Flash via LiteLLM's OpenAI-compatible API. System prompt includes static core context loaded from `<local-share>/hapax-voice/screen_context.md` and optional RAG chunks. Returns structured `ScreenAnalysis`. The analyzer explicitly avoids commenting on non-work content or narrating obvious actions.
+**Context:** Sends base64 screenshot to Gemini Flash via LiteLLM's OpenAI-compatible API. System prompt includes static core context loaded from `<local-share>/hapax-daimonion/screen_context.md` and optional RAG chunks. Returns structured `ScreenAnalysis`. The analyzer explicitly avoids commenting on non-work content or narrating obvious actions.
 
 **Step 1: Write the failing test**
 
 ```python
-# tests/hapax_voice/test_screen_analyzer.py
+# tests/hapax_daimonion/test_screen_analyzer.py
 import json
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from agents.hapax_voice.screen_analyzer import ScreenAnalyzer
-from agents.hapax_voice.screen_models import ScreenAnalysis
+from agents.hapax_daimonion.screen_analyzer import ScreenAnalyzer
+from agents.hapax_daimonion.screen_models import ScreenAnalysis
 
 
 @pytest.mark.asyncio
@@ -545,7 +545,7 @@ async def test_analyzer_returns_screen_analysis():
         "keywords": ["pytest", "test failure"],
     })
 
-    with patch("agents.hapax_voice.screen_analyzer.AsyncOpenAI") as mock_client_cls:
+    with patch("agents.hapax_daimonion.screen_analyzer.AsyncOpenAI") as mock_client_cls:
         mock_client = MagicMock()
         mock_client.chat.completions.create = AsyncMock(return_value=mock_response)
         mock_client_cls.return_value = mock_client
@@ -562,7 +562,7 @@ async def test_analyzer_returns_screen_analysis():
 async def test_analyzer_returns_none_on_failure():
     analyzer = ScreenAnalyzer(model="gemini-flash")
 
-    with patch("agents.hapax_voice.screen_analyzer.AsyncOpenAI") as mock_client_cls:
+    with patch("agents.hapax_daimonion.screen_analyzer.AsyncOpenAI") as mock_client_cls:
         mock_client = MagicMock()
         mock_client.chat.completions.create = AsyncMock(side_effect=Exception("API down"))
         mock_client_cls.return_value = mock_client
@@ -587,13 +587,13 @@ def test_analyzer_works_without_context_file():
 
 **Step 2: Run test to verify it fails**
 
-Run: `cd <ai-agents> && uv run pytest tests/hapax_voice/test_screen_analyzer.py -v`
+Run: `cd <ai-agents> && uv run pytest tests/hapax_daimonion/test_screen_analyzer.py -v`
 Expected: FAIL with `ModuleNotFoundError`
 
 **Step 3: Write minimal implementation**
 
 ```python
-# agents/hapax_voice/screen_analyzer.py
+# agents/hapax_daimonion/screen_analyzer.py
 """Screen analysis via Gemini Flash vision model."""
 from __future__ import annotations
 
@@ -604,11 +604,11 @@ from pathlib import Path
 
 from openai import AsyncOpenAI
 
-from agents.hapax_voice.screen_models import Issue, ScreenAnalysis
+from agents.hapax_daimonion.screen_models import Issue, ScreenAnalysis
 
 log = logging.getLogger(__name__)
 
-DEFAULT_CONTEXT_PATH = Path.home() / ".local" / "share" / "hapax-voice" / "screen_context.md"
+DEFAULT_CONTEXT_PATH = Path.home() / ".local" / "share" / "hapax-daimonion" / "screen_context.md"
 
 _BASE_PROMPT = """\
 You are a screen awareness system for a single-operator Linux workstation (COSMIC/Wayland).
@@ -731,14 +731,14 @@ class ScreenAnalyzer:
 
 **Step 4: Run test to verify it passes**
 
-Run: `cd <ai-agents> && uv run pytest tests/hapax_voice/test_screen_analyzer.py -v`
+Run: `cd <ai-agents> && uv run pytest tests/hapax_daimonion/test_screen_analyzer.py -v`
 Expected: 4 passed
 
 **Step 5: Commit**
 
 ```bash
 cd <ai-agents>
-git add agents/hapax_voice/screen_analyzer.py tests/hapax_voice/test_screen_analyzer.py
+git add agents/hapax_daimonion/screen_analyzer.py tests/hapax_daimonion/test_screen_analyzer.py
 git commit -m "feat(voice): add Gemini Flash screen analyzer"
 ```
 
@@ -747,23 +747,23 @@ git commit -m "feat(voice): add Gemini Flash screen analyzer"
 ### Task 5: ScreenMonitor Orchestrator
 
 **Files:**
-- Create: `agents/hapax_voice/screen_monitor.py`
-- Create: `tests/hapax_voice/test_screen_monitor.py`
+- Create: `agents/hapax_daimonion/screen_monitor.py`
+- Create: `tests/hapax_daimonion/test_screen_monitor.py`
 
 **Context:** Composes ChangeDetector + ScreenCapturer + ScreenAnalyzer into a single subsystem. Manages the async polling loop, triggers captures on context changes and idle timers, caches the latest ScreenAnalysis, and routes high-confidence issues to the NotificationQueue. Rate-limits proactive notifications (5 min cooldown). Follows the same composition pattern as `PresenceDetector`.
 
 **Step 1: Write the failing test**
 
 ```python
-# tests/hapax_voice/test_screen_monitor.py
+# tests/hapax_daimonion/test_screen_monitor.py
 import asyncio
 import time
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from agents.hapax_voice.screen_models import Issue, ScreenAnalysis
-from agents.hapax_voice.screen_monitor import ScreenMonitor
+from agents.hapax_daimonion.screen_models import Issue, ScreenAnalysis
+from agents.hapax_daimonion.screen_monitor import ScreenMonitor
 
 
 def _make_analysis(**kwargs):
@@ -840,13 +840,13 @@ def test_monitor_disabled_without_crash():
 
 **Step 2: Run test to verify it fails**
 
-Run: `cd <ai-agents> && uv run pytest tests/hapax_voice/test_screen_monitor.py -v`
+Run: `cd <ai-agents> && uv run pytest tests/hapax_daimonion/test_screen_monitor.py -v`
 Expected: FAIL with `ModuleNotFoundError`
 
 **Step 3: Write minimal implementation**
 
 ```python
-# agents/hapax_voice/screen_monitor.py
+# agents/hapax_daimonion/screen_monitor.py
 """Screen awareness orchestrator composing detection, capture, and analysis."""
 from __future__ import annotations
 
@@ -855,14 +855,14 @@ import logging
 import time
 from typing import TYPE_CHECKING
 
-from agents.hapax_voice.notification_queue import VoiceNotification
-from agents.hapax_voice.screen_analyzer import ScreenAnalyzer
-from agents.hapax_voice.screen_capturer import ScreenCapturer
-from agents.hapax_voice.screen_change_detector import ChangeDetector, FocusState
-from agents.hapax_voice.screen_models import ScreenAnalysis
+from agents.hapax_daimonion.notification_queue import VoiceNotification
+from agents.hapax_daimonion.screen_analyzer import ScreenAnalyzer
+from agents.hapax_daimonion.screen_capturer import ScreenCapturer
+from agents.hapax_daimonion.screen_change_detector import ChangeDetector, FocusState
+from agents.hapax_daimonion.screen_models import ScreenAnalysis
 
 if TYPE_CHECKING:
-    from agents.hapax_voice.notification_queue import NotificationQueue
+    from agents.hapax_daimonion.notification_queue import NotificationQueue
 
 log = logging.getLogger(__name__)
 
@@ -1000,14 +1000,14 @@ class ScreenMonitor:
 
 **Step 4: Run test to verify it passes**
 
-Run: `cd <ai-agents> && uv run pytest tests/hapax_voice/test_screen_monitor.py -v`
+Run: `cd <ai-agents> && uv run pytest tests/hapax_daimonion/test_screen_monitor.py -v`
 Expected: 6 passed
 
 **Step 5: Commit**
 
 ```bash
 cd <ai-agents>
-git add agents/hapax_voice/screen_monitor.py tests/hapax_voice/test_screen_monitor.py
+git add agents/hapax_daimonion/screen_monitor.py tests/hapax_daimonion/test_screen_monitor.py
 git commit -m "feat(voice): add ScreenMonitor orchestrator"
 ```
 
@@ -1016,16 +1016,16 @@ git commit -m "feat(voice): add ScreenMonitor orchestrator"
 ### Task 6: Daemon Integration
 
 **Files:**
-- Modify: `agents/hapax_voice/config.py` — add screen monitor config fields
-- Modify: `agents/hapax_voice/__main__.py` — instantiate ScreenMonitor, start background task
-- Modify: `agents/hapax_voice/persona.py` — inject screen context into system prompt
-- Create: `tests/hapax_voice/test_daemon_screen_integration.py`
+- Modify: `agents/hapax_daimonion/config.py` — add screen monitor config fields
+- Modify: `agents/hapax_daimonion/__main__.py` — instantiate ScreenMonitor, start background task
+- Modify: `agents/hapax_daimonion/persona.py` — inject screen context into system prompt
+- Create: `tests/hapax_daimonion/test_daemon_screen_integration.py`
 
 **Step 1: Write the failing test**
 
 ```python
-# tests/hapax_voice/test_daemon_screen_integration.py
-from agents.hapax_voice.config import VoiceConfig
+# tests/hapax_daimonion/test_daemon_screen_integration.py
+from agents.hapax_daimonion.config import VoiceConfig
 
 
 def test_voice_config_has_screen_fields():
@@ -1045,12 +1045,12 @@ def test_voice_config_screen_disabled():
 
 **Step 2: Run test to verify it fails**
 
-Run: `cd <ai-agents> && uv run pytest tests/hapax_voice/test_daemon_screen_integration.py -v`
+Run: `cd <ai-agents> && uv run pytest tests/hapax_daimonion/test_daemon_screen_integration.py -v`
 Expected: FAIL with `ValidationError` (fields don't exist yet)
 
 **Step 3: Add config fields to VoiceConfig**
 
-Add these fields to `agents/hapax_voice/config.py` in the `VoiceConfig` class, after the notification queue section:
+Add these fields to `agents/hapax_daimonion/config.py` in the `VoiceConfig` class, after the notification queue section:
 
 ```python
     # Screen monitor
@@ -1064,16 +1064,16 @@ Add these fields to `agents/hapax_voice/config.py` in the `VoiceConfig` class, a
 
 **Step 4: Run test to verify it passes**
 
-Run: `cd <ai-agents> && uv run pytest tests/hapax_voice/test_daemon_screen_integration.py -v`
+Run: `cd <ai-agents> && uv run pytest tests/hapax_daimonion/test_daemon_screen_integration.py -v`
 Expected: 2 passed
 
 **Step 5: Wire ScreenMonitor into VoiceDaemon**
 
-In `agents/hapax_voice/__main__.py`:
+In `agents/hapax_daimonion/__main__.py`:
 
 1. Import ScreenMonitor:
 ```python
-from agents.hapax_voice.screen_monitor import ScreenMonitor
+from agents.hapax_daimonion.screen_monitor import ScreenMonitor
 ```
 
 2. In `VoiceDaemon.__init__`, after PresenceDetector setup:
@@ -1096,7 +1096,7 @@ from agents.hapax_voice.screen_monitor import ScreenMonitor
 
 **Step 6: Inject screen context into persona**
 
-In `agents/hapax_voice/persona.py`, add a function:
+In `agents/hapax_daimonion/persona.py`, add a function:
 ```python
 def screen_context_block(analysis) -> str:
     """Format screen analysis for injection into LLM system prompt."""
@@ -1119,7 +1119,7 @@ def screen_context_block(analysis) -> str:
 
 ```bash
 cd <ai-agents>
-git add agents/hapax_voice/config.py agents/hapax_voice/__main__.py agents/hapax_voice/persona.py tests/hapax_voice/test_daemon_screen_integration.py
+git add agents/hapax_daimonion/config.py agents/hapax_daimonion/__main__.py agents/hapax_daimonion/persona.py tests/hapax_daimonion/test_daemon_screen_integration.py
 git commit -m "feat(voice): integrate ScreenMonitor into daemon"
 ```
 
@@ -1130,7 +1130,7 @@ git commit -m "feat(voice): integrate ScreenMonitor into daemon"
 **Files:**
 - Create: `scripts/generate_screen_context.py`
 
-**Context:** Generates the static system context file at `<local-share>/hapax-voice/screen_context.md` by querying live system state: `docker compose ps`, `systemctl --user list-units`, port scan, agent directory listing. This is the file the screen analyzer loads as its system knowledge prompt. The drift detector (Task 9) will regenerate this automatically, but this script allows manual generation.
+**Context:** Generates the static system context file at `<local-share>/hapax-daimonion/screen_context.md` by querying live system state: `docker compose ps`, `systemctl --user list-units`, port scan, agent directory listing. This is the file the screen analyzer loads as its system knowledge prompt. The drift detector (Task 9) will regenerate this automatically, but this script allows manual generation.
 
 **Step 1: Write the script**
 
@@ -1141,7 +1141,7 @@ git commit -m "feat(voice): integrate ScreenMonitor into daemon"
 Queries live system state and writes a context file that the screen
 analyzer uses as its system knowledge prompt.
 
-Output: <local-share>/hapax-voice/screen_context.md
+Output: <local-share>/hapax-daimonion/screen_context.md
 """
 from __future__ import annotations
 
@@ -1149,7 +1149,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-OUTPUT_PATH = Path.home() / ".local" / "share" / "hapax-voice" / "screen_context.md"
+OUTPUT_PATH = Path.home() / ".local" / "share" / "hapax-daimonion" / "screen_context.md"
 
 
 def run_cmd(cmd: list[str], timeout: int = 10) -> str:
@@ -1257,7 +1257,7 @@ Expected: outputs path and size
 
 **Step 3: Verify the output**
 
-Run: `cat <local-share>/hapax-voice/screen_context.md | head -30`
+Run: `cat <local-share>/hapax-daimonion/screen_context.md | head -30`
 Expected: well-formatted markdown with live system data
 
 **Step 4: Commit**
@@ -1289,7 +1289,7 @@ Add an entry to `profiles/component-registry.yaml` in ai-agents:
 ```yaml
   screen-monitor:
     type: subsystem
-    parent: hapax-voice
+    parent: hapax-daimonion
     description: "Screen awareness via AT-SPI + cosmic-screenshot + Gemini Flash vision"
     dependencies:
       - atspi2 (system)
@@ -1324,7 +1324,7 @@ git commit -m "docs: add screen-monitor to component registry"
 **Files:**
 - Modify: `agents/drift_detector/__main__.py` (or main module) — add `screen_analyzer_context` dimension
 
-**Context:** The drift-detector agent runs weekly (Sunday 03:00). It gets a new dimension: `screen_analyzer_context`. This dimension compares the static core prompt at `<local-share>/hapax-voice/screen_context.md` against live state (`docker compose ps`, `systemctl --user list-units`, port scan, agent directory). If drift detected, it regenerates the context file using the logic from Task 7's script. Drift corrections also trigger documentation updates across Hapax repos.
+**Context:** The drift-detector agent runs weekly (Sunday 03:00). It gets a new dimension: `screen_analyzer_context`. This dimension compares the static core prompt at `<local-share>/hapax-daimonion/screen_context.md` against live state (`docker compose ps`, `systemctl --user list-units`, port scan, agent directory). If drift detected, it regenerates the context file using the logic from Task 7's script. Drift corrections also trigger documentation updates across Hapax repos.
 
 **Step 1: Read the drift detector's current code**
 
@@ -1334,7 +1334,7 @@ Understand the existing dimension pattern.
 **Step 2: Add the new dimension**
 
 Add a `screen_analyzer_context` check that:
-1. Loads `<local-share>/hapax-voice/screen_context.md`
+1. Loads `<local-share>/hapax-daimonion/screen_context.md`
 2. Queries live state (same as Task 7)
 3. Uses the LLM to compare and detect meaningful differences
 4. If drift found: regenerates the context file

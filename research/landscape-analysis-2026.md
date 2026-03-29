@@ -176,7 +176,7 @@ The field has evolved significantly since Anthropic's original 2022 paper:
 - **Multimodal ambient AI:** Wearables, smartphones, and voice assistants converging. Leverages voice, vision, motion sensors, biometrics to anticipate needs.
 - **Physical presence sensing for voice security:** PMC paper (2025) on exploiting physical presence to secure voice systems.
 
-**Hapax's position:** The voice daemon (hapax-voice) with presence detection and screen analysis is aligned with the ambient intelligence research direction. The integration with Hyprland IPC (window events, workspace changes) provides richer context than most ambient systems, which rely on generic OS hooks.
+**Hapax's position:** The voice daemon (hapax-daimonion) with presence detection and screen analysis is aligned with the ambient intelligence research direction. The integration with Hyprland IPC (window events, workspace changes) provides richer context than most ambient systems, which rely on generic OS hooks.
 
 ### B5. Human-AI Teaming
 

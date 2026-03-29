@@ -89,14 +89,14 @@ Beyond Claude Code and the Logos Dashboard, Tier 1 includes additional LLM-enabl
 | Editor LLM layer | Continue.dev (VS Code) | Code completion, chat, inline edit via LiteLLM |
 | Browser LLM layer | Lumos (Chrome) | Page RAG, summarization via Ollama |
 | Voice input (PTT) | Voxtype / faster-whisper | Push-to-talk STT feeding into existing surfaces |
-| Voice daemon | Hapax Voice (`agents/hapax_voice`) | Always-on voice interaction: wake word, presence detection, Gemini Live S2S + local STT/TTS cascade, speaker ID, PANNs ambient sound classification, context gate, screen awareness (AT-SPI + Gemini Flash vision) |
+| Voice daemon | Hapax Daimonion (`agents/hapax_daimonion`) | Always-on voice interaction: wake word, presence detection, Gemini Live S2S + local STT/TTS cascade, speaker ID, PANNs ambient sound classification, context gate, screen awareness (AT-SPI + Gemini Flash vision) |
 | Desktop hotkeys | fuzzel + aichat + wl-copy | Selection transforms, prompt dialogs, model switching |
 
-Design: `docs/plans/2026-03-05-llm-enablement-design.md` (waves 1-4), `<distro-work>/docs/plans/2026-03-09-voice-modality-design.md` (Hapax Voice). Implementation: `<distro-work>/`.
+Design: `docs/plans/2026-03-05-llm-enablement-design.md` (waves 1-4), `<distro-work>/docs/plans/2026-03-09-voice-modality-design.md` (Hapax Daimonion). Implementation: `<distro-work>/`.
 
-**Hapax Voice utilities:** `scripts/train_wake_word.py` (generate custom OpenWakeWord models from text phrases), `scripts/enroll_speaker.py` (register speaker embedding for speaker ID verification), and `scripts/generate_screen_context.py` (generate static system context for screen awareness).
+**Hapax Daimonion utilities:** `scripts/train_wake_word.py` (generate custom OpenWakeWord models from text phrases), `scripts/enroll_speaker.py` (register speaker embedding for speaker ID verification), and `scripts/generate_screen_context.py` (generate static system context for screen awareness).
 
-**Screen awareness subsystem:** AT-SPI2 polls for focused window changes (2s interval), grim captures on context change, Gemini Flash analyzes via LiteLLM. High-confidence errors route to TTS via NotificationQueue + ContextGate. Static system context loaded from `<local-share>/hapax-voice/screen_context.md` (auto-generated, drift-detected). Design: `docs/plans/2026-03-09-screen-awareness-design.md`.
+**Screen awareness subsystem:** AT-SPI2 polls for focused window changes (2s interval), grim captures on context change, Gemini Flash analyzes via LiteLLM. High-confidence errors route to TTS via NotificationQueue + ContextGate. Static system context loaded from `<local-share>/hapax-daimonion/screen_context.md` (auto-generated, drift-detected). Design: `docs/plans/2026-03-09-screen-awareness-design.md`.
 
 ## Tier 2: On-Demand Agents (Pydantic AI)
 

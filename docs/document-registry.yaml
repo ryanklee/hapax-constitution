@@ -52,9 +52,9 @@ repos:
         archetype: project-context
       - path: README.md
         archetype: project-context
-      - path: agents/hapax_voice/README.md
+      - path: agents/hapax_daimonion/README.md
         archetype: specification
-      - path: agents/hapax_voice/LAYER_STATUS.yaml
+      - path: agents/hapax_daimonion/LAYER_STATUS.yaml
         archetype: reference
     ci_sources:
       agents: "agents/"

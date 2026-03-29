@@ -198,7 +198,7 @@ Documents dropped into `~/documents/rag-sources/` are automatically ingested by 
 
 The ambient audio pipeline continuously records from the microphone (`audio-recorder.service`), segments and transcribes recordings every 30 minutes (`audio-processor.timer`), and archives raw audio to Google Drive nightly (`audio-archiver.timer`). Transcriptions are stored in Qdrant for RAG retrieval.
 
-The voice daemon (`hapax-voice.service`) provides always-on voice interaction with wake word detection, presence awareness, and TTS/STT via Chatterbox.
+The voice daemon (`hapax-daimonion.service`) provides always-on voice interaction with wake word detection, presence awareness, and TTS/STT via Chatterbox.
 
 Check ingestion status:
 ```bash
@@ -546,7 +546,7 @@ All agents invoked as: `cd <ai-agents> && eval "$(<.envrc)" && uv run python -m 
 | gcalendar_sync | Google Calendar event indexing for RAG | No | `--auth`, `--full-sync`, `--auto`, `--stats` |
 | gdrive_sync | Google Drive smart tiered RAG sync | No | `--auth`, `--full-scan`, `--auto`, `--fetch ID`, `--stats` |
 | gmail_sync | Gmail metadata indexing for RAG (metadata-only by default) | No | `--auth`, `--full-sync`, `--auto`, `--stats` |
-| hapax_voice | Voice interaction daemon (wake word, presence, TTS/STT) | Yes | `--config PATH`, `--check` |
+| hapax_daimonion | Voice interaction daemon (wake word, presence, TTS/STT) | Yes | `--config PATH`, `--check` |
 | health_monitor | Deterministic stack health checks + auto-fix | No | `--fix`, `--yes`, `--check GROUPS`, `--json`, `--verbose` |
 | ingest | RAG document ingestion (Docling + watchdog + Qdrant) | No | `--bulk-only`, `--watch-only`, `--retry-status`, `--force` |
 | knowledge_maint | Qdrant maintenance: stats, stale pruning, dedup | Optional | `--apply`, `--collection NAME`, `--json`, `--summarize` |
@@ -653,7 +653,7 @@ State files stored at `<cache>/<agent>-sync/state.json`. Google agents authentic
 | research | stdout | — | — | — |
 | query | stdout | — | — | — |
 
-`profiles/` = `<ai-agents>/profiles/`. Sync agents also write `*-profile-facts.jsonl` to `<cache>/<agent>/` for the profiler bridge. `hapax_voice` is a notification *consumer* — it subscribes to ntfy and delivers alerts via TTS audio.
+`profiles/` = `<ai-agents>/profiles/`. Sync agents also write `*-profile-facts.jsonl` to `<cache>/<agent>/` for the profiler bridge. `hapax_daimonion` is a notification *consumer* — it subscribes to ntfy and delivers alerts via TTS audio.
 
 ---
 
@@ -680,7 +680,7 @@ State files stored at `<cache>/<agent>-sync/state.json`. Google agents authentic
 | Disk usage >85% | Docker images, audio recordings accumulating | `docker system prune -f`; audio-archiver moves raw audio daily at 03:00 |
 | Service latency degraded | Container resource contention | `docker stats` to check; restart the offending container |
 | Axiom hooks not firing | `install.sh` not re-run after hapax-system update | `cd <hapax-system> && ./install.sh`; restart Claude Code |
-| Voice daemon VRAM lock stale | `hapax-voice` crashed without releasing lock | `rm <cache>/hapax-voice/vram.lock`; lock class auto-detects stale PIDs |
+| Voice daemon VRAM lock stale | `hapax-daimonion` crashed without releasing lock | `rm <cache>/hapax-daimonion/vram.lock`; lock class auto-detects stale PIDs |
 
 For any issue: start with `/status` (or `uv run python -m agents.health_monitor`). Run with `--fix --yes` to auto-remediate common failures.
 
