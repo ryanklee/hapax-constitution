@@ -108,6 +108,23 @@ coverage_rules:
     match_by: name
     severity: medium
     description: "Every council agent must be referenced in CLAUDE.md"
+    exclude_patterns:
+      - "*-sync"          # 10 sync agents — utility tier, not architectural
+      - "demo*"           # demo pipeline agents
+      - "video-*"         # video capture/processing
+      - "audio-*"         # audio processing
+      - "code-review"     # CI-only agent
+      - "sdlc-*"          # CI pipeline agents
+      - "retroactive-*"   # batch labeling
+      - "alignment-*"     # experimental
+      - "flow-*"          # journaling
+      - "browser-*"       # experimental
+      - "storage-*"       # infrastructure utility
+      - "weather-*"       # utility
+      - "screen-*"        # utility
+      - "watch-*"         # hardware receiver
+      - "health-*"        # infrastructure
+      - "av-*"            # experimental
 
   - ci_type: agent
     reference_doc: ~/projects/hapax-officium/CLAUDE.md
@@ -115,24 +132,55 @@ coverage_rules:
     match_by: name
     severity: medium
     description: "Every officium agent must be referenced in CLAUDE.md"
+    exclude_patterns:
+      - "*-sync"          # council sync agents, not officium
+      - "demo*"           # council demo pipeline
+      - "video-*"         # council media agents
+      - "audio-*"         # council media agents
+      - "studio-*"        # council studio agents
+      - "hapax-*"         # council daimonion/voice
+      - "visual-*"        # council visual pipeline
+      - "effect-*"        # council shader pipeline
+      - "stimmung-*"      # council perception
+      - "vault-*"         # council obsidian integration
+      - "watch-*"         # council hardware
+      - "code-review"     # CI-only
+      - "sdlc-*"          # CI pipeline
+      - "retroactive-*"   # batch labeling
+      - "alignment-*"     # experimental
+      - "flow-*"          # council journaling
+      - "browser-*"       # experimental
+      - "storage-*"       # infrastructure
+      - "weather-*"       # utility
+      - "screen-*"        # utility
+      - "health-*"        # infrastructure
+      - "av-*"            # experimental
+      - "consent-*"       # council governance
+      - "contradiction-*" # council governance
+      - "deliberation-*"  # council evaluation
+      - "context-*"       # council session restore
+      - "activity-*"      # council analytics
+      - "sprint-*"        # council sprint tracking
+      - "profiler*"       # council profiling
+      - "introspect*"     # council introspection
+      - "ingest*"         # council RAG pipeline
+      - "knowledge-*"     # council knowledge maintenance
+      - "digest*"         # council digest
+      - "scout*"          # council scout
+      - "query*"          # council query dispatch
+      - "research*"       # council research
 
-  - ci_type: timer
-    reference_doc: ~/projects/hapax-council/CLAUDE.md
-    match_by: name
-    severity: low
-    description: "Every systemd timer should be documented in council CLAUDE.md"
-
-  - ci_type: service
-    reference_doc: ~/projects/hapax-council/CLAUDE.md
-    match_by: name
-    severity: medium
-    description: "Every Docker service must be documented in council CLAUDE.md"
+  # Timer and service rules removed — CLAUDE.md is not an exhaustive inventory.
+  # The agent registry (shared/agent_registry.py) and systemd/README.md serve that role.
 
   - ci_type: repo
     reference_doc: ~/projects/hapax-constitution/README.md
     match_by: name
     severity: medium
     description: "Every hapax repo must appear in the constitution README"
+    exclude_patterns:
+      - "*--*"            # git worktrees (e.g., hapax-council--beta)
+      - "distro-work"     # system maintenance, not a hapax project
 
 # ── Mutual awareness ────────────────────────────────────────────────
 mutual_awareness:
