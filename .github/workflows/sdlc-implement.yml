@@ -80,7 +80,7 @@ jobs:
           fi
 
       - name: Run Claude Code implementation
-        uses: anthropics/claude-code-action@5d0cc745cd0cce4c0e9e0b3511de26c3bc285eb5
+        uses: anthropics/claude-code-action@0432df8bfe0572278dd19bca33be32cdc8061ebb
         env:
           LANGFUSE_EXPORT_FILE: /tmp/langfuse-traces.jsonl
         with:
