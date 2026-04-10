@@ -9,7 +9,7 @@ Shared conventions (uv, ruff, testing, git workflow) are in the workspace `CLAUD
 - **`axioms/registry.yaml`** — Canonical axiom definitions (IDs, weights, scope, text)
 - **`axioms/implications/`** — Per-axiom derived implications with tier (T0/T1/T2), enforcement mode, sufficiency levels
 - **`domains/`** — Domain-scoped axiom extensions (infrastructure, management)
-- **`knowledge/interpretive-canon.md`** — Rules for axiom interpretation in novel situations
+- **`knowledge/`** — Sufficiency probes per domain (management, music, personal, technical)
 - **`pattern-guide.md`** — Guide for implementing the governance pattern
 
 ## Conventions
@@ -21,6 +21,17 @@ Shared conventions (uv, ruff, testing, git workflow) are in the workspace `CLAUD
 - **YAML is the source of truth** for axiom definitions and implications. Markdown documents describe; YAML defines.
 - **Weight ordering matters.** Higher weight = higher precedence. Constitutional axioms always outweigh domain axioms (supremacy clause).
 - **Tier semantics are strict.** T0 = block (existential violation), T1 = review (requires awareness), T2 = warn (quality preference), T3 = lint (advisory style/documentation guidance, enforcement: linter).
+
+## Local Validation
+
+```bash
+uv sync
+uv run ruff check .              # Lint Python (SDLC scripts)
+uv run ruff format --check .     # Format check
+yamllint axioms/ domains/ knowledge/  # YAML lint (if yamllint installed)
+```
+
+CI runs YAML linting automatically via `yaml-lint.yml` workflow.
 
 ## SDLC Pipeline
 
