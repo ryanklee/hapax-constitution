@@ -59,3 +59,26 @@ implications:
   canon: purposivist
   mode: sufficiency
   level: component
+
+- id: cb-scope-001
+  tier: T1
+  text: >
+    corporate_boundary governs SYSTEM DATA FLOW — the vault, employer context,
+    credentials, and work artifacts. It does NOT govern operator-chosen content
+    publication. Livestream research output to public CDNs (YouTube, Twitch) is
+    operator-chosen content, not a corporate data leak, and is out of scope for
+    corporate_boundary. Operator-chosen content that INCIDENTALLY contains
+    employer data (audio bleed of a work call, screen capture of an employer
+    tool) IS governed by corporate_boundary; the distinction is the operator's
+    deliberate selection, not incidental exposure.
+  enforcement: review
+  canon: purposivist
+  mode: sufficiency
+  level: subsystem
+  scope_clarification_date: '2026-04-16'
+  scope_clarification_reason: >
+    Pre-clarification, a reading of corporate_boundary as blanket "vault data
+    flow to unsanctioned remote" could be interpreted to block livestream
+    publication. LRR Phase 6 opens the distinction: deliberate content
+    publication is not governed by corporate_boundary; incidental employer
+    data exposure still is.

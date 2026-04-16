@@ -12,6 +12,31 @@ implications:
   mode: compatibility
   level: component
 
+- id: mg-drafting-visibility-001
+  tier: T0
+  text: >
+    Drafting auxiliary content (narration text, overlay copy, research-registry
+    entries, etc.) that references management subjects is permitted AS preparation
+    IFF the operator retains discrete, revocable, non-visual delivery authority
+    over that content. "Preparation" requires: (a) the draft is not auto-published
+    to any channel the management subject can read, (b) operator can edit or veto
+    before any surface becomes visible, (c) operator's approval-to-deliver is a
+    discrete action, not an auto-execution after a timeout. Auto-delivery of
+    drafts bypassing operator discretion constitutes delivery, not preparation,
+    and is blocked.
+  enforcement: block
+  canon: textualist
+  mode: compatibility
+  level: subsystem
+  related_precedent: sp-hsea-mg-001
+  derivation_reason: >
+    HSEA Phase 0 introduced automated content-authoring agents (drafters,
+    narrators). Without this implication, mg-boundary-001 forbids all agent
+    authorship involving any management subject. This implication carves a
+    preparation/delivery distinction matching mg-boundary-001's "LLMs prepare,
+    humans deliver" framing while making operator-discretion-preservation
+    load-bearing on the distinction.
+
 - id: mg-boundary-002
   tier: T0
   text: Never suggest what the operator should say to a team member or draft
