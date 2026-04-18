@@ -1,0 +1,74 @@
+# axioms/precedents/hsea/management-governance-drafting-as-content.yaml
+# HSEA Phase 0 deliverable 0.5 — precedent establishing that automated content
+# drafting constitutes preparation (not delivery) under management_governance
+# IFF the operator retains discrete, revocable, non-visual delivery authority.
+# Paired with implication mg-drafting-visibility-001.
+
+precedents:
+  - id: sp-hsea-mg-001
+    axiom_id: management_governance
+    situation: >
+      HSEA agents (Hermes Self-Executing Architecture, introduced in HSEA
+      Phase 0) draft research narration, overlay copy, chronicle entries,
+      and similar auxiliary content that may reference individuals from
+      the management context.
+    decision: compliant
+    reasoning: >
+      Drafting constitutes preparation under management_governance's
+      "LLMs prepare, humans deliver" framing when the operator retains
+      discrete, revocable, non-visual delivery authority. Delivery is
+      the moment content becomes visible to the management subject; as
+      long as that moment remains gated on a deliberate operator action
+      (not a timeout, not an auto-publish), the upstream drafting does
+      not itself violate mg-boundary-001.
+
+      This precedent does NOT permit: auto-publishing drafts, timeout-based
+      auto-delivery, or any path where an operator no-op results in
+      delivery. The operator's approval-to-deliver must be a discrete,
+      affirmative action.
+    tier: T1
+    distinguishing_facts:
+      - "Operator retains discrete approval authority — no auto-delivery"
+      - "Revocable at any time before delivery"
+      - "Non-visual preparation path (drafts can be audible or internal but not visible to subject pre-approval)"
+      - "Delivery is an affirmative operator action, not a timeout or no-op"
+    edge_cases:
+      - case: livestream_clip_extraction
+        classification: preparation
+        reasoning: >
+          Extracting a clip from a livestream is preparation. The clip
+          becomes delivery only when the operator publishes it to a
+          management-subject-readable channel.
+      - case: daimonion_audible_narration
+        classification: preparation
+        reasoning: >
+          Daimonion-voiced narration is audible to the operator and any
+          livestream audience under the stream's broadcast consent set,
+          but not specifically pushed to management subjects. Preparation
+          with downstream delivery discretion intact.
+      - case: drafts_referencing_individuals
+        classification: falls_back_to_mg_boundary_rules
+        reasoning: >
+          If the draft itself generates feedback language, performance
+          evaluation, or coaching recommendations about a named individual,
+          mg-boundary-001 still applies. sp-hsea-mg-001 does not relax
+          mg-boundary-001's content restriction; it only clarifies that
+          the mere fact of agent drafting is not itself delivery.
+      - case: operator_approves_without_reading
+        classification: operator_responsibility
+        reasoning: >
+          If the operator approves delivery without reading the draft,
+          the operator has exercised their discrete authority. The
+          precedent does not require a read-receipt; it requires the
+          authority be retained and exercisable.
+      - case: spawn_budget_exhaustion_truncation
+        classification: preparation
+        reasoning: >
+          Drafting that is truncated mid-generation due to agent spawn
+          budget exhaustion remains preparation. Truncation does not
+          itself constitute delivery; a truncated draft requires the
+          same operator approval as a complete one.
+    related_implication: mg-drafting-visibility-001
+    created: "2026-04-16"
+    authority: operator
+    pr_vehicle: "LRR Phase 6 joint hapax-constitution PR (drop #62 §10 Q5)"

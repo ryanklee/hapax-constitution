@@ -29,12 +29,23 @@ implications:
   level: component
 - id: su-privacy-001
   tier: T0
-  text: Privacy controls, data anonymization, and consent mechanisms are unnecessary
-    since the user is also the developer.
+  text: >
+    Privacy controls, data anonymization, and consent mechanisms are unnecessary
+    for OPERATOR-OWNED data since the user is also the developer. This does not
+    apply to non-operator data that enters the system incidentally (audio bleed,
+    camera frames, chat reactions, bystander presence); such data is governed
+    by interpersonal_transparency (weight 88) regardless of the single-user
+    framing, and interpersonal_transparency takes precedence by weight.
   enforcement: block
   canon: purposivist
   mode: compatibility
   level: component
+  scope_clarification_date: '2026-04-16'
+  scope_clarification_reason: >
+    Pre-clarification text was ambiguous under broadcast semantics. Single-operator
+    ownership of the system does not extend to data about third parties that the
+    system passively captures. The operator is the developer of the system, not
+    of every person whose identifying features transit the system.
 - id: su-error-001
   tier: T2
   text: Error messages can include sensitive debugging information since only the operator

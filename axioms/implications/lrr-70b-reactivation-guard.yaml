@@ -1,0 +1,46 @@
+axiom_id: interpersonal_transparency
+derived_at: '2026-04-16'
+model: balanced
+derivation_version: 1
+source_trail:
+  - "drop #62 §14 Hermes abandonment (2026-04-15T06:35Z)"
+  - "substrate research v1 §10.1"
+  - "LRR Phase 5 spec §0.5.4"
+  - "LRR Phase 6 spec §0.5.2"
+implications:
+- id: lrr-70b-reactivation-guard
+  tier: T0
+  text: >
+    Any future 70B substrate decision must pre-register a consent-revocation
+    drill and pass it before being authorized. This rule prevents future sessions
+    from reactivating the 70B inference path without satisfying the constitutional
+    consent-latency constraint that eliminated it in the first place.
+  enforcement: block
+  canon: textualist
+  mode: compatibility
+  level: system
+  rationale: >
+    Drop #62 §4 Option C forked LRR Phase 5 into 5a (8B parallel, primary track)
+    and 5b (70B, deferred backlog). Drop #62 §14 subsequently narrowed 5b from
+    "deferred backlog with hardware-envelope-change hedge" to "structurally
+    unreachable on the foreseeable hardware envelope" per the operator's
+    2026-04-15T06:20Z direction ("hardware env unlikely to change within the
+    year"). The underlying reason 70B was eliminated was consent-latency: a 70B
+    model cannot complete consent revocation acknowledgement within the
+    constitutional latency bound on current hardware, which violates
+    interpersonal_transparency's revocability requirement.
+
+    Because the elimination was driven by a specific constitutional constraint,
+    reactivation must demonstrably satisfy that constraint before proceeding. A
+    future session discovering improved hardware or quantization that appears
+    to close the latency gap MUST run the consent-revocation drill and pass it
+    with recorded evidence before opening a Phase 5b-equivalent branch.
+  interaction_notes: >
+    This rule is distinct from sp-hsea-mg-001. sp-hsea-mg-001 is HSEA Phase 0's
+    drafting-as-content precedent (substrate-agnostic). This implication is
+    LRR Phase 6's substrate-specific amendment. Both land in the joint PR
+    vehicle per drop #62 §10 Q5, but they are structurally separate.
+  drill_specification: >
+    Mid-stream consent revocation drill: simulate mid-stream revocation; measure
+    end-to-end revocation-acknowledged latency; assert < 5s. Drill procedure
+    defined in LRR Phase 6 spec §3.7.

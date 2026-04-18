@@ -1,0 +1,65 @@
+axiom_id: interpersonal_transparency
+derived_at: '2026-04-16'
+model: balanced
+derivation_version: 1
+implications:
+- id: it-revoke-001
+  tier: T0
+  text: >
+    Upon consent revocation, the system must purge all subject-specific persistent
+    state from archives, vectors, logs, and caches. Recording persistence is
+    reversible — segments can be deleted, vectors removed, logs scrubbed.
+  enforcement: block
+  canon: textualist
+  mode: compatibility
+  level: subsystem
+
+- id: it-irreversible-broadcast
+  tier: T0
+  category: broadcast_persistence
+  text: >
+    Any capability whose output reaches a CDN (YouTube, Twitch, public HLS edge,
+    public RTMP relay) before a consent check completes is a T0 violation. CDN
+    buffers, viewer-side HLS segment caches, and automated viewer-side recordings
+    are unreachable to the revocation pipeline; the frames are, for the purposes
+    of this axiom, permanently published. Revocation therefore prevents FUTURE
+    broadcast only; it does not retrieve already-broadcast frames.
+  enforcement: block
+  canon: textualist
+  mode: compatibility
+  level: capability
+  revocation_semantics: |
+    Irrevocable for already-broadcast frames. Revocation prevents FUTURE broadcast only.
+    This is distinct from it-revoke-001 (recording revocation), which applies to locally
+    held segments that CAN be purged on revocation. The operator must explicitly consent
+    to the broadcast persistence category before enabling any capability that produces
+    CDN-bound output.
+  interaction_with_it_revoke_001: |
+    it-revoke-001 governs recording persistence — frames held in local archive that can
+    be deleted on consent revocation. it-irreversible-broadcast governs the subset of
+    those frames that have ALSO been transmitted to a CDN, for which deletion is
+    definitionally impossible. A capability that both records and broadcasts is subject
+    to BOTH implications; the recording side supports revocation, the broadcast side
+    does not.
+  enforcement_rules:
+    - >
+      pre-broadcast: capability.operational_properties.broadcast=true requires
+      consent_recording_allowed AND an active broadcast_consent contract for every
+      person whose identifying features may appear in the frame
+    - >
+      at-broadcast: a runtime check in compositor.toggle_livestream verifies the active
+      consent contracts cover the current presence set; if not, auto-private fires
+      (LRR Phase 6 §6 stimmung auto-private closed loop)
+    - >
+      on-violation: SDLC hook blocks commits that introduce a capability with
+      broadcast=true without a corresponding consent contract template
+  new_consent_contract_shape:
+    parties:
+      - operator (issuing)
+      - subject (consenting to broadcast persistence category)
+    scope:
+      - identifying_features
+      - voice_audible
+      - behavioral_patterns_recognizable
+    duration: event_bounded | time_bounded | indefinite
+    retractable: future_broadcast_only  # hardcoded; cannot be widened
