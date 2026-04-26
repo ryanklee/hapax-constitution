@@ -125,6 +125,43 @@ def detect_drift(owner: str, repos: list[RepoSpec] | None = None) -> list[DriftR
     ]
 
 
+def main(argv: list[str] | None = None) -> int:
+    """CLI entry. ``--check`` reports drift (exit 1 on drift detected);
+    ``--enforce`` applies the policy."""
+    import argparse
+
+    parser = argparse.ArgumentParser(prog="sdlc.render.repo_settings")
+    parser.add_argument("--owner", default="ryanklee", help="GitHub owner")
+    mode = parser.add_mutually_exclusive_group(required=True)
+    mode.add_argument("--check", action="store_true", help="Detect drift; exit 1 on drift")
+    mode.add_argument("--enforce", action="store_true", help="Apply policy where drift exists")
+    args = parser.parse_args(argv)
+
+    reports = detect_drift(args.owner)
+    drifted = [r for r in reports if r.has_drift]
+
+    for r in reports:
+        marker = "DRIFT" if r.has_drift else "ok   "
+        print(
+            f"{marker} {args.owner}/{r.repo_name:25s} "
+            f"wiki={r.observed.has_wiki!s:5s} (want {r.desired.has_wiki!s}) "
+            f"projects={r.observed.has_projects!s:5s} (want {r.desired.has_projects!s}) "
+            f"discussions={r.observed.has_discussions!s:5s} (want {r.desired.has_discussions!s})"
+        )
+
+    if not drifted:
+        return 0
+
+    if args.check:
+        print(f"\n{len(drifted)} repo(s) drifted; run with --enforce to correct", flush=True)
+        return 1
+
+    for r in drifted:
+        apply_settings(args.owner, r.repo_name, r.desired)
+        print(f"patched {args.owner}/{r.repo_name}")
+    return 0
+
+
 __all__ = [
     "DriftReport",
     "RepoSettings",
@@ -134,4 +171,9 @@ __all__ = [
     "desired_settings",
     "detect_drift",
     "first_party_repos",
+    "main",
 ]
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
