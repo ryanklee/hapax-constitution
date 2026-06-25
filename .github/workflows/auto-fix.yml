@@ -61,7 +61,7 @@ jobs:
             echo "Resolved PR #$PR_NUMBER on branch $BRANCH"
           fi
 
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
         if: steps.pr.outputs.skip != 'true'
         with:
           ref: ${{ steps.pr.outputs.branch }}
@@ -121,21 +121,21 @@ jobs:
           echo "Failure categories: ${CATS:-unknown}"
 
       # Install toolchains based on what the repo needs
-      - uses: astral-sh/setup-uv@v7
+      - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78
         if: steps.pr.outputs.skip != 'true' && steps.guard.outputs.tripped != 'true'
 
       - name: Install Python deps
         if: steps.pr.outputs.skip != 'true' && steps.guard.outputs.tripped != 'true'
         run: uv sync --extra ci 2>/dev/null || uv sync 2>/dev/null || echo "No uv project — skipping"
 
-      - uses: pnpm/action-setup@v6
+      - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271
         if: >-
           steps.pr.outputs.skip != 'true' && steps.guard.outputs.tripped != 'true' &&
           contains(steps.classify.outputs.categories, 'web-build')
         with:
           version: 9
 
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
         if: >-
           steps.pr.outputs.skip != 'true' && steps.guard.outputs.tripped != 'true' &&
           contains(steps.classify.outputs.categories, 'web-build')
@@ -244,7 +244,7 @@ jobs:
 
       - name: Upload failure log
         if: always() && steps.pr.outputs.skip != 'true'
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: ci-failure-log-${{ steps.pr.outputs.branch }}
           path: /tmp/ci-failure.log
