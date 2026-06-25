@@ -27,7 +27,7 @@ from pydantic import BaseModel
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from sdlc.github import fetch_issue
-from sdlc.trace_export import TraceContext, is_file_export
+from sdlc.trace_export import TraceContext
 
 # ---------------------------------------------------------------------------
 # Structured output model

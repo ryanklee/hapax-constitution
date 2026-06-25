@@ -472,7 +472,10 @@ def _render_timeline(spec: dict, output_path: Path, figsize: tuple, dpi: int) ->
         # Fallback: try labels/values as time/event pairs
         labels = data.get("labels", [])
         values = data.get("values", [])
-        events = [{"time": str(l), "event": str(v)} for l, v in zip(labels, values, strict=False)]
+        events = [
+            {"time": str(label), "event": str(value)}
+            for label, value in zip(labels, values, strict=False)
+        ]
 
     if events:
         list(range(len(events)))

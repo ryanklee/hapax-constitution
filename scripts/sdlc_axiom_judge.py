@@ -28,9 +28,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from sdlc.github import (
     add_pr_labels,
-    fetch_pr,
     fetch_pr_changed_files,
-    fetch_pr_diff,
     post_pr_comment,
 )
 
@@ -180,7 +178,6 @@ def run_axiom_gate(pr_number: int, *, dry_run: bool = False) -> AxiomGateResult:
             summary="Dry run -- all checks passed.",
         )
 
-    pr = fetch_pr(pr_number)
     changed_files = fetch_pr_changed_files(pr_number)
 
     # Structural checks.

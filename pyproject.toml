@@ -53,6 +53,13 @@ dev = [
     "ndcvb",
 ]
 
+[tool.uv]
+override-dependencies = [
+    # moviepy 2.2.1 still declares pillow<12, but the patched Pillow floor is
+    # required for the high-severity Dependabot alerts covered by this task.
+    "pillow>=12.2.0",
+]
+
 # RDLC's M block (the NDCVB instrument) lives in a sibling research repo. It is a
 # TEST/dev dependency only — rdlc.m_binding imports it lazily at runtime, so the
 # governance package never hard-depends on the research artifact (M absent ->
