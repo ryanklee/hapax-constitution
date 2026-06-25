@@ -130,7 +130,7 @@ def _convert_inline_chain(d2_source: str) -> str:
     This is NOT valid D2. Convert to proper node definitions + edges.
     """
     # Detect the pattern: contains -> and [shape] on a single line (or very few lines)
-    lines = [l.strip() for l in d2_source.strip().split("\n") if l.strip()]
+    lines = [line.strip() for line in d2_source.strip().split("\n") if line.strip()]
 
     # Only apply if the source looks like a single-line chain
     # (≤3 non-empty lines, contains ->, contains [...])

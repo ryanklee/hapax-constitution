@@ -167,7 +167,7 @@ def accumulate_lessons(
         return out
 
     existing = out.get(archetype, [])
-    text_index: dict[str, int] = {l["text"]: i for i, l in enumerate(existing)}
+    text_index: dict[str, int] = {lesson["text"]: i for i, lesson in enumerate(existing)}
 
     today = date.today().isoformat()
 
@@ -193,7 +193,7 @@ def accumulate_lessons(
         indexed.sort(key=lambda pair: (pair[1]["added"], pair[0]))
         # Keep only the newest MAX entries.
         keep_set = {pair[0] for pair in indexed[len(existing) - MAX_LESSONS_PER_ARCHETYPE :]}
-        existing = [l for i, l in enumerate(existing) if i in keep_set]
+        existing = [lesson for i, lesson in enumerate(existing) if i in keep_set]
 
     out[archetype] = existing
     return out

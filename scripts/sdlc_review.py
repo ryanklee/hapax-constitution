@@ -30,7 +30,7 @@ from sdlc.github import (
     fetch_pr_diff,
     post_pr_comment,
 )
-from sdlc.trace_export import TraceContext, is_file_export
+from sdlc.trace_export import TraceContext
 
 # ---------------------------------------------------------------------------
 # Structured output
